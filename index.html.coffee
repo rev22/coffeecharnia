@@ -379,7 +379,7 @@ rootLayout.call htmlcup,
         printNumber:
           (x)@> "#{x}"
       
-      window.app = app =
+      window.app = window.coffeecharnia = app =
         libs:
           CoffeeScript: window.CoffeeScript
           aceRefcoffeeMode: globalLibs.aceRefcoffeeMode
