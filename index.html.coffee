@@ -156,7 +156,7 @@ rootLayout.call htmlcup,
         @a href:"https://github.com/rev22/reflective-coffeescript", "Reflective Coffeescript"
   tail: ->
     @script src:"https://github.com/ajaxorg/ace-builds/raw/master/src-min-noconflict/ace.js", type:"text/javascript", charset:"utf-8"
-    @script src:"https://github.com/ajaxorg/ace-builds/raw/master/src-min-noconflict/mode-coffee.js", type:"text/javascript", charset:"utf-8"
+    # @script src:"https://github.com/ajaxorg/ace-builds/raw/master/src-min-noconflict/mode-coffee.js", type:"text/javascript", charset:"utf-8"
     @script src:"coffee-script.js", type:"text/javascript"
     @coffeeScript ->
       globalLibs =
@@ -438,17 +438,34 @@ rootLayout.call htmlcup,
             introFooter.setAttribute "style", ""
             resultFooter.setAttribute "style", "display:none"
             resultDatum.innerHTML = ""
-          @recalculateTextareaSize()
-
+          (@aceEditor())? then
+            @recalculateTextareaSize()
+          else
+            { setTimeout } = @
+            if true
+              # Keep it Simple!
+              setTimeout (=> @view.coffeeArea.scrollTop += 999999), 0
+              return 
+            fixUp = =>
+              area = @view.coffeeArea
+              area.focus()
+              (pos = area.selectionEnd)? then
+                pos--
+                area.setSelectionRange?(pos, pos)
+            setTimeout fixUp, 0
         setup: @>
           # @fs.readFileSync = (x)=> @readFileSync(x)
           # @fs.writeFileSync = (x)=> @readFileSync(x)
           # @ace? and @setupAce()
           app = @
           @view.runButton.onclick = => @runButtonClick()
-          @view.coffeeArea.setupTransform = (editor)->
-            app.view.coffeeArea.transformed = editor
-            editor.getSession().setMode(app.aceRefcoffeeMode())
+          area = @view.coffeeArea
+          area.focus()
+          (pos = area.value.length)? then area.setSelectionRange?(pos, pos)
+          area.setupTransform = (editor)->
+            area.transformed = editor
+            app.aceRefcoffeeMode (mode)->
+              editor.getSession().setMode(mode)
             editor.setTheme("ace/theme/merbivore")
           window.onkeydown = (event)->
             return app.handleEnterKey?(event) if event.keyCode and event.keyCode is 13
@@ -481,11 +498,28 @@ rootLayout.call htmlcup,
                     line.length is cursorPosition.column then
                         @runButtonClick()
                         return false
+          else
+            area = @view.coffeeArea
+            (end = area.selectionEnd)? then
+              text = area.value
+              text.length > 0 and text.length <= end and text[text.length - 1] is "\n" then
+                  @runButtonClick()
+                  return false
           true
 
-        aceRefcoffeeMode: @>
-          @libs.aceRefcoffeeMode.setup ace: @libs.ace, CoffeeScript: @libs.CoffeeScript
-          "ace/mode/refcoffee"
+        aceRefcoffeeMode: (cb)@>
+          cb? then
+            ace = @libs.ace
+            ace.config.loadModule "ace/mode/coffee", =>
+              @libs.aceRefcoffeeMode.setup ace: @libs.ace, CoffeeScript: @libs.CoffeeScript
+              cb "ace/mode/refcoffee"
+          else
+            try
+              @libs.aceRefcoffeeMode.setup ace: @libs.ace, CoffeeScript: @libs.CoffeeScript
+              @libs.ace.require("ace/mode/refcoffee")
+              "ace/mode/refcoffee"
+            catch e
+              "ace/mode/coffee"
 
         # ace: ace ? null
         # setupAce: @> @ace.edit(@view.coffeeArea)
@@ -497,6 +531,18 @@ rootLayout.call htmlcup,
       app.setup()
 
       
+      # Some sane defaults!  However, this code does not seem to effect any change
+      false then ace?.options =
+          mode:             "coffee"
+          theme:            "cobalt"
+          gutter:           "true"
+          # fontSize:         "10px"
+          # softWrap:         "off"
+          # keybindings:      "ace"
+          # showPrintMargin:  "true"
+          # useSoftTabs:      "true"
+          # showInvisibles:   "false"
+
       inject = (options, callback) ->
         baseUrl = options.baseUrl or "../../src-noconflict"
         load = (path, callback) ->
