@@ -1,6 +1,6 @@
 A simple CoffeeScript Console and Editor.
 
-To execute code, click the Play ([▶]) Button or press Control-Return in the editor area.
+To execute code, click the Play ([▶]) Button or press [Ctrl]+[Return] in the editor area.
 
 Copyright (c) 2014 Michele Bini <michele.bini@gmail.com>
 
