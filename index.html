@@ -764,6 +764,7 @@ button:hover, button:focus, button:active { opacity: 1; }</style><div style="pos
           })()).reverse();
           _fn = function(a, e) {
             e = ace.require("ace/ext/textarea").transformTextarea(a);
+            e.navigateFileEnd();
             a.setupTransform(e);
             a.onchange = function() {
               e.setValue(this.value, -1);

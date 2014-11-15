@@ -628,6 +628,7 @@ rootLayout.call htmlcup,
         for a in (x for x in document.getElementsByClassName("editArea")).reverse()
           do (a, e = ace.require("ace/ext/textarea").transformTextarea(a))->
             e = ace.require("ace/ext/textarea").transformTextarea(a)
+            e.navigateFileEnd()
             a.setupTransform(e)
             a.onchange = ->
               # alert "a onchange " + x
