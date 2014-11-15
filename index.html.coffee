@@ -70,6 +70,14 @@ rootLayout.call htmlcup,
   minwidth: "60em",
   head: ->
     @meta charset:"utf-8"
+    @coffeeScript ->
+      window.console.log.msgRing or do (parent = window.console)->
+        log = ->
+          arguments[0]? then arguments.callee.msgRing.push arguments[0]
+          parent.log.apply @, arguments
+        log.msgRing = [ ]
+        window.console = { log, __proto__: parent }
+    @coffeeScript -> window.console.log "Loading CoffeeCharnia page"
     @title "CoffeeCharnia"
     @meta id:"meta", name:"viewport", content:"width=device-width, user-scalable=no, initial-scale=1"
     @style """

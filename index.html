@@ -1,5 +1,24 @@
 <!DOCTYPE html>
-<html lang="en" manifest="coffeeconsole.appcache" style="height:100%"><meta charset="utf-8"><title>CoffeeCharnia</title><meta id="meta" name="viewport" content="width=device-width, user-scalable=no, initial-scale=1"><style>div,pre { padding: 0; margin:0; }
+<html lang="en" manifest="coffeeconsole.appcache" style="height:100%"><meta charset="utf-8"><script type="text/javascript">(function () {
+        return window.console.log.msgRing || (function(parent) {
+          var log;
+          log = function() {
+            if (arguments[0] != null) {
+              arguments.callee.msgRing.push(arguments[0]);
+            }
+            return parent.log.apply(this, arguments);
+          };
+          log.msgRing = [];
+          return window.console = {
+            log: log,
+            __proto__: parent
+          };
+        })(window.console);
+      })();
+</script><script type="text/javascript">(function () {
+        return window.console.log("Loading CoffeeCharnia page");
+      })();
+</script><title>CoffeeCharnia</title><meta id="meta" name="viewport" content="width=device-width, user-scalable=no, initial-scale=1"><style>div,pre { padding: 0; margin:0; }
 body { background:black; color: #ddd; }
 a { color:#5af; }
 a:visited { color:#49f; }
