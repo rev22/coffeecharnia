@@ -4,7 +4,7 @@ window.coffeecharniaLoader = {
     coffeescriptUrl: "coffee-script.js"
   },
   pkgInfo: {
-    version: "CoffeeCharnia 0.2.41",
+    version: "CoffeeCharnia 0.2.42",
     description: "Reflective CoffeeScript Console",
     copyright: "Copyright (c) 2014 Michele Bini",
     license: "GPL3"
@@ -12,7 +12,7 @@ window.coffeecharniaLoader = {
   coffeecharniaBase: {
     alert: alert,
     inlineStyle: (function(x) {
-      x.coffee = "@>\n           s = @sizePercentage ? 38\n           (g = @gravity)? then\n             [ x, y ] = g\n           else\n             x = y = 1\n           y = ([ (-> \"top:0\"),   (-> \"top:#{(100-s)/2}%\"),   (-> \"bottom:0\")  ])[y]()\n           x = ([ (-> \"left:0\"),  (-> \"left:#{(100-s)/2}%\"),  (-> \"right:0\")   ])[x]()\n           g = \"#{x};#{y}\"\n           \"position:absolute;overflow:auto;width:#{s}%;height:#{s}%;#{g};background:black;color:#ddd;text-align:initial;text-size:12px\"\n         \n          ";
+      x.coffee = "@>\n           s = @sizePercentage ? 38\n           (g = @gravity)? then\n             [ x, y ] = g\n           else\n             x = y = 1\n           y = ([ (-> \"top:0\"),   (-> \"top:#{(100-s)/2}%\"),   (-> \"bottom:0\")  ])[y]()\n           x = ([ (-> \"left:0\"),  (-> \"left:#{(100-s)/2}%\"),  (-> \"right:0\")   ])[x]()\n           g = \"#{x};#{y}\"\n           \"position:absolute;overflow:auto;width:#{s}%;height:#{s}%;#{g};background:black;color:#ddd;text-align:initial;font-size:12px\"\n         \n          ";
       return x;
     })(function() {
       var g, s, x, y, _ref;
@@ -41,7 +41,7 @@ window.coffeecharniaLoader = {
         })
       ][x]();
       g = "" + x + ";" + y;
-      return "position:absolute;overflow:auto;width:" + s + "%;height:" + s + "%;" + g + ";background:black;color:#ddd;text-align:initial;text-size:12px";
+      return "position:absolute;overflow:auto;width:" + s + "%;height:" + s + "%;" + g + ";background:black;color:#ddd;text-align:initial;font-size:12px";
     }),
     accumulator: [],
     printHtml: (function(x) {
