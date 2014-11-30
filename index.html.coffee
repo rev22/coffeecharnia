@@ -17,7 +17,7 @@
 rootLayout = ({ head, header, body, footer, tail, minheight, minwidth })->
       # This seems rather complex, but it appears to be the simplest effective way to get what I want, flex isn't working as expected
       @printHtml "<!DOCTYPE html>\n"
-      @html lang:"en", manifest:"coffeeconsole.appcache", style:"height:100%", ->
+      @html lang:"en", manifest:"coffeecharnia.appcache", style:"height:100%", ->
         head.call @
         @body style:"height:100%;margin:0;overflow:auto", ->
             @div id:"console", tabindex:"0", style:"height:100%;display:table;width:100%;max-width:100%;table-layout:fixed", ->
