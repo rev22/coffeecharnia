@@ -1,5 +1,5 @@
 do->
-  version = "0.2.18"
+  version = "0.2.37"
   document.coffeecharniaBookmarkletVersion = version
   v = "?version=#{version}"
   injectSrc = chrome.extension.getURL("coffeecharnia.js") + v
@@ -8,6 +8,7 @@ do->
   loadUp = (x = injectSrc)->
       s = document.createElement("script")
       s.src = x
+      s.onload = -> document.body.removeChild s
       document.body.appendChild s
 
   h = (e)->

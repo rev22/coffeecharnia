@@ -24,6 +24,11 @@ htmlcup.html lang:"en", manifest:"coffeecharnia.appcache", style:"height:100%", 
       window.coffeecharniaLoader =
         config:
           coffeescriptUrl: "coffee-script.js" # "lib/coffee-script.js"        
+        pkgInfo:
+          version: "CoffeeCharnia 0.2.0"
+          description: "Reflective CoffeeScript Console"
+          copyright: "Copyright (c) 2014 Michele Bini"
+          license: "GPL3"
         coffeecharniaBase:
           inlineStyle: @>
            s = @sizePercentage ? 38

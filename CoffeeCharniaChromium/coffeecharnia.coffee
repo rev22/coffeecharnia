@@ -2,7 +2,7 @@ window.coffeecharniaLoader =
         config:
           coffeescriptUrl: "coffee-script.js" # document.getElementById("coffeecharniaInject").coffeescriptUrl # "coffee-script.js" # "lib/coffee-script.js"        
         pkgInfo:
-          version: "CoffeeCharnia 0.2.0"
+          version: "CoffeeCharnia 0.2.37"
           description: "Reflective CoffeeScript Console"
           copyright: "Copyright (c) 2014 Michele Bini"
           license: "GPL3"
@@ -602,11 +602,11 @@ window.coffeecharniaLoader =
               callback() if callback
           document.getElementsByTagName('head')[0].appendChild x
           
-        coffeecharniaLayout: ({ id, header, body, footer, minheight, minwidth, style, innerStyle, htmlcup })@>
+        coffeecharniaLayout: ({ cssClass, header, body, footer, minheight, minwidth, style, innerStyle, htmlcup })@>
           # return @div "foobar"
           # This seems rather complex, but it appears to be the simplest effective way to get what I want, flex isn't working as expected
           # @printHtml "<!DOCTYPE html>\n"
-          htmlcup.div class:"coffeecharniaContainer", style:"#{style}", ->
+          htmlcup.div class:cssClass, style:"#{style}", ->
               @div style:"height:100%;display:table;width:100%;max-width:100%;table-layout:fixed", ->
                     innerStyle? then @style innerStyle
                     if false
@@ -660,29 +660,33 @@ window.coffeecharniaLoader =
           htmlcup = htmlcup.compileLib()
 
           htmlgizmo =
+            cssPrefix: "coffeecharnia_"
             make: (htmlcup)->
               cssClass = (name)=> @cssClass name
               homeEvent = (name)=> @homeEvent name
+              containerClass = cssClass 'container'
               charnia.coffeecharniaLayout
+                cssClass: containerClass
                 htmlcup: htmlcup
                 style: coffeecharniaBase.inlineStyle()
                 innerStyle:
                   """
-                  div,pre { padding: 0; margin:0; }
-                  a { color: #ffb }
-                  a:visited { color: #eec }
-                  a:hover { color: white }
+                  .#{containerClass} pre { background:none; color:inherit; }
+                  .#{containerClass} div, .#{containerClass} pre { padding: 0; margin:0; }
+                  .#{containerClass} a { color: #ffb }
+                  .#{containerClass} a:visited { color: #eec }
+                  .#{containerClass} a:hover { color: white }
                   """
                 minheight: "7em",
                 minwidth: "60em",
                 head: ->
                   @meta charset:"utf-8"
                   @style """
-                    body { background:black; color: #ddd; }
-                    a { color:#5af; }
-                    a:visited { color:#49f; }
-                    a:hover { color:#6cf; }
-                    select, textarea { border: 1px solid #555; }
+                    .#{containerClass} { background:black; color: #ddd; }
+                    .#{containerClass} a { color:#5af; }
+                    .#{containerClass} a:visited { color:#49f; }
+                    .#{containerClass} a:hover { color:#6cf; }
+                    .#{containerClass} select, textarea { border: 1px solid #555; }
                     """
                 header: (opts)->
                   @style """
@@ -690,23 +694,23 @@ window.coffeecharniaLoader =
                       """
                   @div opts, ->
                     @style """
-                      .coffeecharniaContainer select { min-width:5em; max-width:30%; width:18em; }
-                      .coffeecharniaContainer select, .coffeecharniaContainer button { font-size:inherit; text-align:center;   }
-                      .coffeecharniaContainer .button { display:inline-block; }
-                      .coffeecharniaContainer button, .coffeecharniaContainer .button, .coffeecharniaContainer input, .coffeecharniaContainer select:not(:focus):not(:hover) { color:white; background:black; }
+                      /* .#{containerClass} select { min-width:5em; max-width:30%; width:18em; } */
+                      .#{containerClass} select, .#{containerClass} button { font-size:inherit; text-align:center;   }
+                      .#{containerClass} .button { display:inline-block; }
+                      .#{containerClass} button, .#{containerClass} .button, .#{containerClass} input, .#{containerClass} select:not(:focus):not(:hover) { color:white; background:black; }
                       /* select option:not(:checked) { color:red !important; background:black !important; } */
                       /* option:active, option[selected], option:checked, option:hover, option:focus { background:#248 !important; } */
-                      .coffeecharniaContainer button, .coffeecharniaContainer .button { min-width:5%; font-size:220%; border: 2px outset grey; }
-                      .coffeecharniaContainer button:active, .coffeecharniaContainer .button.button-on { border: 2px inset grey; background:#248; }
-                      .coffeecharniaContainer .button input[type="checkbox"] { display:none; }
-                      .coffeecharniaContainer .arrow { font-weight:bold;  }
-                      .coffeecharniaContainer .editArea { height:100%;width:100%;box-sizing:border-box; }
+                      .#{containerClass} button, .#{containerClass} .button { min-width:5%; font-size:220%; border: 2px outset grey; }
+                      .#{containerClass} button:active, .#{containerClass} .button.button-on { border: 2px inset grey; background:#248; }
+                      .#{containerClass} .button input[type="checkbox"] { display:none; }
+                      .#{containerClass} .arrow { font-weight:bold;  }
+                      .#{containerClass} .editArea { height:100%;width:100%;box-sizing:border-box; }
                       """
                 body: (opts)->
                     @style """
-                      .coffeecharniaContainer textarea { background: black; color: #ddd; }
-                      .coffeecharniaContainer button { opacity: 0.22; }
-                      .coffeecharniaContainer button:hover, .coffeecharniaContainer button:focus, .coffeecharniaContainer button:active { opacity: 1; }
+                      .#{containerClass} textarea { background: black; color: #ddd; }
+                      .#{containerClass} button { opacity: 0.22; }
+                      .#{containerClass} button:hover, .#{containerClass} button:focus, .#{containerClass} button:active { opacity: 1; }
                       """
                     @div style:"font-size:12px;position:absolute;top:0;right:0;left:0;bottom:0;overflow:hidden", ->
                         px = 44;
@@ -727,15 +731,15 @@ window.coffeecharniaLoader =
                           
                 footer: (opts)->
                   @style """
-                      .coffeecharniaContainer div.thisFooter, .coffeecharniaContainer .thisFooter div { text-align:center; }
+                      .#{containerClass} div.#{cssClass 'thisFooter'}, .#{containerClass} .#{cssClass 'thisFooter'} div { text-align:center; }
                       """
-                  @div class:"thisFooter", opts, ->
+                  @div class:cssClass('thisFooter'), opts, ->
                     @style """
-                      #resultFooter {
+                      .#{containerClass} div.#{cssClass 'thisFooter'} div.#{cssClass 'resultFooter'} {
                         /* overflow:auto; */
                         vertical-align: middle;
                       }
-                      #resultDatum {
+                      .#{containerClass} div.#{cssClass 'thisFooter'} div.#{cssClass 'resultDatum'} {
                         text-align:initial;
                         vertical-align:initial;
                         display:inline-block;
