@@ -1,5 +1,5 @@
 do->
-  version = "0.2.37"
+  version = "0.2.38"
   document.coffeecharniaBookmarkletVersion = version
   v = "?version=#{version}"
   injectSrc = chrome.extension.getURL("coffeecharnia.js") + v

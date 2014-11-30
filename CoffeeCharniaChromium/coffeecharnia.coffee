@@ -2,7 +2,7 @@ window.coffeecharniaLoader =
         config:
           coffeescriptUrl: "coffee-script.js" # document.getElementById("coffeecharniaInject").coffeescriptUrl # "coffee-script.js" # "lib/coffee-script.js"        
         pkgInfo:
-          version: "CoffeeCharnia 0.2.37"
+          version: "CoffeeCharnia 0.2.38"
           description: "Reflective CoffeeScript Console"
           copyright: "Copyright (c) 2014 Michele Bini"
           license: "GPL3"
@@ -672,7 +672,7 @@ window.coffeecharniaLoader =
                 innerStyle:
                   """
                   .#{containerClass} pre { background:none; color:inherit; }
-                  .#{containerClass} div, .#{containerClass} pre { padding: 0; margin:0; }
+                  .#{containerClass} div, .#{containerClass} pre { padding: 0; margin:0; text-align:inherit; }
                   .#{containerClass} a { color: #ffb }
                   .#{containerClass} a:visited { color: #eec }
                   .#{containerClass} a:hover { color: white }
