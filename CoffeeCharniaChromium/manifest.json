@@ -1,0 +1,14 @@
+{
+	"name": "CoffeeCharnia for Chrome",
+	"version": "0.2.1",
+	"description": "Adds a Coffeescript Console to your Web pages in Chrome",
+	"content_scripts": [
+		{
+			"matches": ["https://*/*", "http://*/*", "file://*/*"],
+			"js": ["bookmarklet-ctrl-m.js"]
+		}
+	],
+	"manifest_version" : 2,
+	"web_accessible_resources": [ "coffeecharnia.js", "coffee-script.js" ],
+	"icons": { "128": "coffeecharnia.png" }
+}
