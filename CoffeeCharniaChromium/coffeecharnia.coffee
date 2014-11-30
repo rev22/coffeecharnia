@@ -2,7 +2,7 @@ window.coffeecharniaLoader =
         config:
           coffeescriptUrl: "coffee-script.js" # document.getElementById("coffeecharniaInject").coffeescriptUrl # "coffee-script.js" # "lib/coffee-script.js"        
         pkgInfo:
-          version: "CoffeeCharnia 0.2.40"
+          version: "CoffeeCharnia 0.2.41"
           description: "Reflective CoffeeScript Console"
           copyright: "Copyright (c) 2014 Michele Bini"
           license: "GPL3"
@@ -17,7 +17,7 @@ window.coffeecharniaLoader =
            y = ([ (-> "top:0"),   (-> "top:#{(100-s)/2}%"),   (-> "bottom:0")  ])[y]()
            x = ([ (-> "left:0"),  (-> "left:#{(100-s)/2}%"),  (-> "right:0")   ])[x]()
            g = "#{x};#{y}"
-           "position:absolute;overflow:auto;width:#{s}%;height:#{s}%;#{g};background:black;color:#ddd;text-align:initial"
+           "position:absolute;overflow:auto;width:#{s}%;height:#{s}%;#{g};background:black;color:#ddd;text-align:initial;text-size:12px"
          
           accumulator: [ ]
                        
