@@ -13,7 +13,11 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 { htmlcup } = require 'htmlcup'
-  
+
+fs = require 'fs'
+datauri = (t,x)-> "data:#{t};base64,#{new Buffer(fs.readFileSync(x)).toString("base64")}"
+datauriicon = (x)-> datauri "image/x-icon", x
+    
 rootLayout = ({ head, header, body, footer, tail, minheight, minwidth })->
       # This seems rather complex, but it appears to be the simplest effective way to get what I want, flex isn't working as expected
       @printHtml "<!DOCTYPE html>\n"
@@ -80,6 +84,9 @@ rootLayout.call htmlcup,
     @coffeeScript -> window.console.log "Loading CoffeeCharnia page"
     @title "CoffeeCharnia"
     @meta id:"meta", name:"viewport", content:"width=device-width, user-scalable=no, initial-scale=1"
+    @meta name:"apple-mobile-web-app-capable", content:"yes"
+    @meta name:"mobile-web-app-capable", content:"yes"
+    @link rel:"shortcut icon", href:datauriicon("favicon.ico")
     @style """
       div,pre { padding: 0; margin:0; }
       body { background:black; color: #ddd; }
@@ -159,7 +166,7 @@ rootLayout.call htmlcup,
         @b "CoffeeCharnia"
         @span ->
           @span ": "
-          @i "A Reflective Coffescript Console/Editor!"
+          @i "A Reflective Coffeescript Console/Editor!"
         @printHtml " &bull; "
         @a href:"https://github.com/rev22/reflective-coffeescript", "Reflective Coffeescript"
   tail: ->
