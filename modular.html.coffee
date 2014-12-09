@@ -19,18 +19,26 @@ htmlcup.html lang:"en", manifest:"coffeecharnia.appcache", style:"height:100%", 
     @meta charset:"utf-8"
   @body ->
     @div "This demo lets you start multiple consoles."
-    @button onclick:"javascript:coffeecharniaLoader.start()", "Start!"
+    @button onclick:"javascript:coffeecharniaLoader.spawn()", "Start!"
     @coffeeScript ->
       window.coffeecharniaLoader =
         config:
           coffeescriptUrl: "coffee-script.js" # "lib/coffee-script.js"        
         pkgInfo:
-          version: "CoffeeCharnia 0.2.0"
+          version: "CoffeeCharnia 0.3.43"
           description: "Reflective CoffeeScript Console"
           copyright: "Copyright (c) 2014 Michele Bini"
           license: "GPL3"
-        coffeecharniaBase:
-          inlineStyle: @>
+
+        edit: (target)@>
+          text = @libs.DynmodPrinter.limitLines(5000).print(target)
+          @spawn { target, text }
+        
+        exit: @>
+            el = @getElement()
+            el.parentNode.removeChild el
+        
+        inlineStyle: @>
            s = @sizePercentage ? 38
            (g = @gravity)? then
              [ x, y ] = g
@@ -39,35 +47,37 @@ htmlcup.html lang:"en", manifest:"coffeecharnia.appcache", style:"height:100%", 
            y = ([ (-> "top:0"),   (-> "top:#{(100-s)/2}%"),   (-> "bottom:0")  ])[y]()
            x = ([ (-> "left:0"),  (-> "left:#{(100-s)/2}%"),  (-> "right:0")   ])[x]()
            g = "#{x};#{y}"
-           "position:absolute;overflow:auto;width:#{s}%;height:#{s}%;#{g};background:black;color:#ddd"
+           "position:absolute;overflow:auto;width:#{s}%;height:#{s}%;#{g};background:black;color:#ddd;text-align:initial;font-size:12px"
          
-          accumulator: [ ]
-                       
-          printHtml: (s)@>
-            @accumulator.push s
-                       
-          isConverting: false
+        isConverting: false
           
-          targetObject: null # "window"
+        target: null # ? @
            
-          processSource: (s)@> @targetObject? then ("((x)->x.call(" + @targetObject + ")) ()->") + ("\n" + s).replace(/\n/g, "\n  ") else s
+        processSource: (s)@> s
+        processSourceIntoFunction: (s)@> ("->") + ("\n" + s).replace(/\n/g, "\n  ")
                        
-          evalCoffeescript: (x)@>
-            @eval(@libs.CoffeeScript.compile(@processSource(x), bare:true))
+        evalCoffeescript: (x)@>
+            { target } = @
+            if target is @global
+              js = @libs.CoffeeScript.compile(@processSource(x), bare:true)
+              @eval js
+            else
+              js = @libs.CoffeeScript.compile(@processSourceIntoFunction(@processSource(x)), bare:true)
+              @eval("#{js}").call(target ? @)
                        
-          evalWithSourceMap: (x)@>
+        evalWithSourceMap: (x)@>
             # This technique does not seem to work properly on Chromium 22
             { js, sourceMapV3, file_name } = @libs.CoffeeScript.compile x, sourceMap: 1
             @lastSourceMap = ""
             @eval(js)
                        
-          preQuote: (x)@> "<pre>#{ x.replace /</g, "&lt;" }</pre>"
+        preQuote: (x)@> "<pre>#{ x.replace /</g, "&lt;" }</pre>"
                        
-          printVal: (x)@>
+        printVal: (x)@>
             @preQuote(@libs.DynmodPrinter.limitLines(1000).print(x))
             # x.toString()
                        
-          recalculateTextareaSize: @>
+        recalculateTextareaSize: @>
             { setTimeout } = @
             setTimeout (=>
               editor = @view.coffeeArea.transformed
@@ -75,7 +85,7 @@ htmlcup.html lang:"en", manifest:"coffeecharnia.appcache", style:"height:100%", 
               editor.renderer.scrollCursorIntoView()
             ), 0
           
-          runButtonClick: @>
+        runButtonClick: @>
             x = @view.coffeeArea.value
             isError = null
             val = if true
@@ -112,7 +122,7 @@ htmlcup.html lang:"en", manifest:"coffeecharnia.appcache", style:"height:100%", 
                   pos--
                   area.setSelectionRange?(pos, pos)
               setTimeout fixUp, 0
-          setup: @>
+        setup: @>
             # @fs.readFileSync = (x)=> @readFileSync(x)
             # @fs.writeFileSync = (x)=> @readFileSync(x)
             # @ace? and @setupAce()
@@ -135,13 +145,11 @@ htmlcup.html lang:"en", manifest:"coffeecharnia.appcache", style:"height:100%", 
               return app.handleEnterKey?(event) if event.keyCode and event.keyCode is 13
               true
                        
-          getElement: @> @view.coffeecharniaConsole
+        getElement: @> @view.coffeecharniaConsole
         
-          killButtonClick: @>
-            el = @getElement()
-            el.parentNode.removeChild el
-        
-          shrinkButtonClick: @>
+        killButtonClick: @> @exit()
+
+        shrinkButtonClick: @>
             el = @getElement()
             s = @sizePercentage ? 38
             s = s / 100.0
@@ -151,7 +159,7 @@ htmlcup.html lang:"en", manifest:"coffeecharnia.appcache", style:"height:100%", 
             el.setAttribute('style', @inlineStyle())
             @recalculateTextareaSize()
         
-          dragButtonUp: (ev,el)@>
+        dragButtonUp: (ev,el)@>
            r = el.getClientRects()[0]
            x = (((ev.clientX - r.left) / r.width) * 3)|0
            y = (((ev.clientY - r.top) / r.height) * 3)|0
@@ -162,7 +170,7 @@ htmlcup.html lang:"en", manifest:"coffeecharnia.appcache", style:"height:100%", 
            el.setAttribute('style', @inlineStyle())
            @recalculateTextareaSize()              
              
-          enlargeButtonClick: @>
+        enlargeButtonClick: @>
            el = @getElement()
            s = @sizePercentage ? 38
            s = s / 100.0
@@ -172,20 +180,20 @@ htmlcup.html lang:"en", manifest:"coffeecharnia.appcache", style:"height:100%", 
            el.setAttribute('style', @inlineStyle())
            @recalculateTextareaSize()
          
-          hideButtonClick: @>
+        hideButtonClick: @>
            el = @getElement()
            el.setAttribute "style", el.getAttribute("style") + ";display:none"
                        
-          getSelection: @>
+        getSelection: @>
             (t = @view.coffeeArea.transformed)? then
               t.getSelection()
             else
               @getInputSelection(@view)
                        
-          aceEditor: @>
+        aceEditor: @>
             @view.coffeeArea.transformed
                           
-          handleEnterKey: (event)@>
+        handleEnterKey: (event)@>
             if event.shiftKey
               return true
             if event.ctrlKey
@@ -211,7 +219,7 @@ htmlcup.html lang:"en", manifest:"coffeecharnia.appcache", style:"height:100%", 
                     return false
             true
                        
-          aceRefcoffeeMode: (cb)@>
+        aceRefcoffeeMode: (cb)@>
             cb? then
               ace = @libs.ace
               ace.config.loadModule "ace/mode/coffee", =>
@@ -264,9 +272,9 @@ htmlcup.html lang:"en", manifest:"coffeecharnia.appcache", style:"height:100%", 
           window: window
           document: document
           deleteNode: (x)@> x.parentNode.removeChild(x)
-          HtmlGizmo:
+          HtmlGizmo: HtmlGizmo =
             pkgInfo:
-              version: "HtmlGizmo 0.2.0"
+              version: "HtmlGizmo 1.0.0"
               description: "Reflective Html Widgets"
               copyright: "Copyright (c) 2014 Michele Bini"
               license: "GPL3"
@@ -274,25 +282,16 @@ htmlcup.html lang:"en", manifest:"coffeecharnia.appcache", style:"height:100%", 
             #
             # Abstract method:
             #
-            # make: (htmlcup)@>
+            # make: (htmlcup, { eventHome, cssPrefix, controller })@>
             #
             #  Create the HTML for the widget using the provided htmlcup object.
             #
             #  Can call @cssClass() and @homeEvent()
             #
-            withBroker: (symbol)@>
-              # Allow specifying a global symbol for the widget instance.  If at all, it should be run before 'make'
-              eventHub: symbol
-              __proto__: @
-            withHome: (home)@>
-              eventHome: home
-              __proto__: @
+            #  Creates a new object
+            #
             setElement: (@element)->
               # This may be run after 'make' to the set element when it is obtained
-            withCssPrefix: (prefix)@>
-              # Allow prefixing all css classes.  If at all, it should be run before 'make'
-              cssPrefix: prefix
-              __proto__: @
             getGlobalCss: @> # Abstract
             getElement: (name)@>
               # Get a named element of the widget
@@ -604,184 +603,7 @@ htmlcup.html lang:"en", manifest:"coffeecharnia.appcache", style:"height:100%", 
               r = @capturedParts
               @capturedParts = {}
               r
-        assert: (c, msg)@> { alert } = @lib; alert msg unless c
-        jsLoad: (sym, src, callback)@>
-          charnia = @
-          { window, document, deleteNode } = @lib
-          if sym and window[sym]?
-            callback() if callback?
-            return
-          x = document.createElement('script')
-          x.type = 'text/javascript'
-          x.src = src
-          y = 1
-          x.onload = x.onreadystatechange = ()->
-            charnia.assert(window[sym]?, "Symbol #{sym} was not defined after loading library") if sym
-            if y and not @readyState or @readyState is 'complete'
-              y = 0
-              deleteNode x
-              callback() if callback
-          document.getElementsByTagName('head')[0].appendChild x
-          
-        coffeecharniaLayout: ({ id, header, body, footer, minheight, minwidth, style, innerStyle, htmlcup })@>
-          # return @div "foobar"
-          # This seems rather complex, but it appears to be the simplest effective way to get what I want, flex isn't working as expected
-          # @printHtml "<!DOCTYPE html>\n"
-          htmlcup.div class:"coffeecharniaContainer", style:"#{style}", ->
-              @div style:"height:100%;display:table;width:100%;max-width:100%;table-layout:fixed", ->
-                    innerStyle? then @style innerStyle
-                    if false
-                      header.call @, style:"display:table-row;min-height:1em;overflow:auto;max-height:5em", class:"consoleHeader"
-                    else if false
-                      @div style:"display:table-row;min-height:1em;background:pink", ->
-                        @div style:"max-height:5em;overflow-y:scroll;overflow-x:hidden;position:relative;display:block", ->
-                          @div style:"float:left;width:100%", contentEditable:"true", ->
-                            @div "x" for x in [ 0 .. 25 ]
-                    else
-                      @div style:"display:table-row;min-height:1em", ->
-                        @div style:"max-height:5em;overflow:hidden;position:relative;display:block", ->
-                          @div style:"float:left;width:100%", ->
-                            header?.call @, class:"consoleHeader"
-                    if false then @div style:"position:relative;height:100%;overflow:hidden;display:table-row", ->
-                      @div style:"position:relative;width:100%;height:100%;min-height:#{minheight}", ->
-                        @div style:"position:absolute;top:0;right:0;left:0;bottom:0;overflow:auto", ->
-                          # x (container width)  y (contained width)
-                          
-                          # 2000 px              2000 px
-                          # 1500 px              1500 px
-                          # 1000 px              1000 px
-                          # 800 px               1000 px
-                          # 500 px               1000 px
-                          # 300 px               600 px
-                          # 200 px               400 px
-                          # 150 px               300 px
-                          # 100 px               200 px
-                          
-                          # y = ((x * 2) ^ 1000 px) _ x
-                          #      min-width width     max-width
-                          # This part does not seem to work on my firefox
-                          @div style:"width:200%;max-width:50em;min-width:100%;height:100%;overflow:hidden", ->
-                            @div style:"position:relative;width:100%;height:100%;display:table", ->
-                            # @div style:"position:relative;width:100%;max-width:100%;height:100%;overflow:auto", ->
-                            #  @div style:"position:absolute;top:0;right:0;left:0;bottom:0;overflow:auto", ->
-                            #    @div style:"position:relative;max-width:200%;min-width:60em;display:table;background:black", ->
-                              body.call @
-                    else @div style:"position:relative;height:100%;overflow:hidden;display:table-row", ->
-                        @div style:"position:relative;width:100%;height:100%;min-height:#{minheight}", ->
-                            @div style:"position:absolute;top:0;right:0;left:0;bottom:0;overflow:auto", ->
-                                body.call @
-                      #
-                    footer.call @, style:"display:table-row"
-        aceUrl: "https://github.com/ajaxorg/ace-builds/raw/master/src-min-noconflict/ace.js"
-        start: @>
-          charnia = @
-          { coffeescriptUrl } = @config
-          { aceUrl, coffeecharniaBase } = @
-          { document, window, DynmodPrinter, Error, camelcapBookmarklet, HtmlGizmo, htmlcup } = @lib
-          htmlcup = htmlcup.compileLib()
-
-          htmlgizmo =
-            make: (htmlcup)->
-              cssClass = (name)=> @cssClass name
-              homeEvent = (name)=> @homeEvent name
-              charnia.coffeecharniaLayout
-                htmlcup: htmlcup
-                style: coffeecharniaBase.inlineStyle()
-                innerStyle:
-                  """
-                  div,pre { padding: 0; margin:0; }
-                  a { color: #ffb }
-                  a:visited { color: #eec }
-                  a:hover { color: white }
-                  """
-                minheight: "7em",
-                minwidth: "60em",
-                head: ->
-                  @meta charset:"utf-8"
-                  @style """
-                    body { background:black; color: #ddd; }
-                    a { color:#5af; }
-                    a:visited { color:#49f; }
-                    a:hover { color:#6cf; }
-                    select, textarea { border: 1px solid #555; }
-                    """
-                header: (opts)->
-                  @style """
-                      div.thisHeader, .thisHeader div { text-align:center; }
-                      """
-                  @div opts, ->
-                    @style """
-                      .coffeecharniaContainer select { min-width:5em; max-width:30%; width:18em; }
-                      .coffeecharniaContainer select, .coffeecharniaContainer button { font-size:inherit; text-align:center;   }
-                      .coffeecharniaContainer .button { display:inline-block; }
-                      .coffeecharniaContainer button, .coffeecharniaContainer .button, .coffeecharniaContainer input, .coffeecharniaContainer select:not(:focus):not(:hover) { color:white; background:black; }
-                      /* select option:not(:checked) { color:red !important; background:black !important; } */
-                      /* option:active, option[selected], option:checked, option:hover, option:focus { background:#248 !important; } */
-                      .coffeecharniaContainer button, .coffeecharniaContainer .button { min-width:5%; font-size:220%; border: 2px outset grey; }
-                      .coffeecharniaContainer button:active, .coffeecharniaContainer .button.button-on { border: 2px inset grey; background:#248; }
-                      .coffeecharniaContainer .button input[type="checkbox"] { display:none; }
-                      .coffeecharniaContainer .arrow { font-weight:bold;  }
-                      .coffeecharniaContainer .editArea { height:100%;width:100%;box-sizing:border-box; }
-                      """
-                body: (opts)->
-                    @style """
-                      .coffeecharniaContainer textarea { background: black; color: #ddd; }
-                      .coffeecharniaContainer button { opacity: 0.22; }
-                      .coffeecharniaContainer button:hover, .coffeecharniaContainer button:focus, .coffeecharniaContainer button:active { opacity: 1; }
-                      """
-                    @div style:"font-size:12px;position:absolute;top:0;right:0;left:0;bottom:0;overflow:hidden", ->
-                        px = 44;
-                        w = "width:#{px}px;max-width:#{px}px;min-width:#{px}px"
-                        i = 1
-                        @button class:cssClass("runButton"),      style:"#{w};right:0;top:0;position:absolute;z-index:1000000", "▶"
-                        @button class:cssClass("enlargeButton"),  style:"#{w};right:#{px*(i++)}px;top:0;position:absolute;z-index:1000000", "⬜"
-                        @button class:cssClass("dragButton"),     style:"#{w};right:#{px*(i++)}px;top:0;position:absolute;z-index:1000000", "⛶"
-                        @button class:cssClass("shrinkButton"),   style:"#{w};right:#{px*(i++)}px;top:0;position:absolute;z-index:1000000", "▫"
-                        @button class:cssClass("killButton"),     style:"#{w};right:#{px*(i++)}px;top:0;position:absolute;z-index:1000000", "⨯"
-                        @textarea class:"#{cssClass("coffeeArea")} editArea",
-                          """
-                          # Welcome to CoffeeCharnia!
-                          """
-                        ####
-                          # Press return twice after a statement to execute it!
-              
-                          
-                footer: (opts)->
-                  @style """
-                      .coffeecharniaContainer div.thisFooter, .coffeecharniaContainer .thisFooter div { text-align:center; }
-                      """
-                  @div class:"thisFooter", opts, ->
-                    @style """
-                      #resultFooter {
-                        /* overflow:auto; */
-                        vertical-align: middle;
-                      }
-                      #resultDatum {
-                        text-align:initial;
-                        vertical-align:initial;
-                        display:inline-block;
-                      }
-                      """
-                    @div class:cssClass("resultFooter"), style:"display:none", ->
-                      @div class:cssClass("resultDatum"), ->
-                    @div class:cssClass("introFooter"), ->
-                      @b "CoffeeCharnia"
-                      @span ->
-                        @span ": "
-                        @i "A Reflective Coffescript Console/Editor!"
-                      @printHtml " &bull; "
-                      @a href:"https://github.com/rev22/reflective-coffeescript", "Reflective Coffeescript"
-            __proto__: HtmlGizmo
-
-          element = htmlcup.captureFirstTag -> htmlgizmo.make @
-          htmlgizmo.setElement(element)
-          document.body.appendChild element
-          
-          withAce = (cb)-> charnia.jsLoad 'ace', aceUrl, cb
-          withCoffee = (cb)-> charnia.jsLoad 'CoffeeScript', coffeescriptUrl, cb
-          withAce -> withCoffee ->
-            globalLibs =
-              aceRefcoffeeMode:
+          aceRefcoffeeMode:
                 setup: ({ace, console, CoffeeScript})@>
                       ace.define "ace/mode/refcoffee_highlight_rules", [
                         "require"
@@ -843,11 +665,192 @@ htmlcup.html lang:"en", manifest:"coffeecharnia.appcache", style:"height:100%", 
                         ).call Mode::
                         exports.Mode = Mode
                         return
+        assert: (c, msg)@> { alert } = @lib; alert msg unless c
+        jsLoad: (sym, src, callback)@>
+          charnia = @
+          { window, document, deleteNode } = @lib
+          if sym and window[sym]?
+            callback() if callback?
+            return
+          x = document.createElement('script')
+          x.type = 'text/javascript'
+          x.src = src
+          y = 1
+          x.onload = x.onreadystatechange = ()->
+            charnia.assert(window[sym]?, "Symbol #{sym} was not defined after loading library") if sym
+            if y and not @readyState or @readyState is 'complete'
+              y = 0
+              deleteNode x
+              callback() if callback
+          document.getElementsByTagName('head')[0].appendChild x
+          
+        aceUrl: "https://github.com/ajaxorg/ace-builds/raw/master/src-min-noconflict/ace.js"
+        htmlGizmo:
+            coffeecharniaLayout: ({ cssClass, header, body, footer, minheight, minwidth, style, innerStyle, htmlcup })@>
+              # return @div "foobar"
+                # This seems rather complex, but it appears to be the simplest effective way to get what I want, flex isn't working as expected
+              # @printHtml "<!DOCTYPE html>\n"
+              htmlcup.div class:cssClass, style:"#{style}", ->
+                @div style:"height:100%;display:table;width:100%;max-width:100%;table-layout:fixed", ->
+                    innerStyle? then @style innerStyle
+                    if false
+                      header.call @, style:"display:table-row;min-height:1em;overflow:auto;max-height:5em", class:"consoleHeader"
+                    else if false
+                      @div style:"display:table-row;min-height:1em;background:pink", ->
+                        @div style:"max-height:5em;overflow-y:scroll;overflow-x:hidden;position:relative;display:block", ->
+                          @div style:"float:left;width:100%", contentEditable:"true", ->
+                            @div "x" for x in [ 0 .. 25 ]
+                    else
+                      @div style:"display:table-row;min-height:1em", ->
+                        @div style:"max-height:5em;overflow:hidden;position:relative;display:block", ->
+                          @div style:"float:left;width:100%", ->
+                            header?.call @, class:"consoleHeader"
+                    if false then @div style:"position:relative;height:100%;overflow:hidden;display:table-row", ->
+                      @div style:"position:relative;width:100%;height:100%;min-height:#{minheight}", ->
+                        @div style:"position:absolute;top:0;right:0;left:0;bottom:0;overflow:auto", ->
+                          # x (container width)  y (contained width)
+                          
+                          # 2000 px              2000 px
+                          # 1500 px              1500 px
+                          # 1000 px              1000 px
+                          # 800 px               1000 px
+                          # 500 px               1000 px
+                          # 300 px               600 px
+                          # 200 px               400 px
+                          # 150 px               300 px
+                          # 100 px               200 px
+                          
+                          # y = ((x * 2) ^ 1000 px) _ x
+                          #      min-width width     max-width
+                          # This part does not seem to work on my firefox
+                          @div style:"width:200%;max-width:50em;min-width:100%;height:100%;overflow:hidden", ->
+                            @div style:"position:relative;width:100%;height:100%;display:table", ->
+                            # @div style:"position:relative;width:100%;max-width:100%;height:100%;overflow:auto", ->
+                            #  @div style:"position:absolute;top:0;right:0;left:0;bottom:0;overflow:auto", ->
+                            #    @div style:"position:relative;max-width:200%;min-width:60em;display:table;background:black", ->
+                              body.call @
+                    else @div style:"position:relative;height:100%;overflow:hidden;display:table-row", ->
+                        @div style:"position:relative;width:100%;height:100%;min-height:#{minheight}", ->
+                            @div style:"position:absolute;top:0;right:0;left:0;bottom:0;overflow:auto", ->
+                                body.call @
+                      #
+                    footer.call @, style:"display:table-row"
+            cssPrefix: "coffeecharnia_"
+            make: (htmlcup, { controller, text })@>
+              cssClass = (name)=> @cssClass name
+              homeEvent = (name)=> @homeEvent name
+              containerClass = cssClass 'container'
+              @coffeecharniaLayout
+                cssClass: containerClass
+                htmlcup: htmlcup
+                style: controller.inlineStyle()
+                innerStyle:
+                  """
+                  .#{containerClass} pre { background:none; color:inherit; }
+                  .#{containerClass} div, .#{containerClass} pre { padding: 0; margin:0; }
+                  .#{containerClass} a { color: #ffb }
+                  .#{containerClass} a:visited { color: #eec }
+                  .#{containerClass} a:hover { color: white }
+                  """
+                minheight: "7em",
+                minwidth: "60em",
+                head: ->
+                  @meta charset:"utf-8"
+                  @style """
+                    .#{containerClass} { background:black; color: #ddd; }
+                    .#{containerClass} a { color:#5af; }
+                    .#{containerClass} a:visited { color:#49f; }
+                    .#{containerClass} a:hover { color:#6cf; }
+                    .#{containerClass} select, textarea { border: 1px solid #555; }
+                    """
+                header: (opts)->
+                  @style """
+                      div.thisHeader, .thisHeader div { text-align:center; }
+                      """
+                  @div opts, ->
+                    @style """
+                      /* .#{containerClass} select { min-width:5em; max-width:30%; width:18em; } */
+                      .#{containerClass} select, .#{containerClass} button { font-size:inherit; text-align:center;   }
+                      .#{containerClass} .button { display:inline-block; }
+                      .#{containerClass} button, .#{containerClass} .button, .#{containerClass} input, .#{containerClass} select:not(:focus):not(:hover) { color:white; background:black; }
+                      /* select option:not(:checked) { color:red !important; background:black !important; } */
+                      /* option:active, option[selected], option:checked, option:hover, option:focus { background:#248 !important; } */
+                      .#{containerClass} button, .#{containerClass} .button { min-width:5%; font-size:220%; border: 2px outset grey; }
+                      .#{containerClass} button:active, .#{containerClass} .button.button-on { border: 2px inset grey; background:#248; }
+                      .#{containerClass} .button input[type="checkbox"] { display:none; }
+                      .#{containerClass} .arrow { font-weight:bold;  }
+                      .#{containerClass} .editArea { height:100%;width:100%;box-sizing:border-box; }
+                      """
+                body: (opts)->
+                    @style """
+                      .#{containerClass} textarea { background: black; color: #ddd; }
+                      .#{containerClass} button { opacity: 0.22; }
+                      .#{containerClass} button:hover, .#{containerClass} button:focus, .#{containerClass} button:active { opacity: 1; }
+                      """
+                    @div style:"font-size:12px;position:absolute;top:0;right:0;left:0;bottom:0;overflow:hidden", ->
+                        px = 44;
+                        w = "width:#{px}px;max-width:#{px}px;min-width:#{px}px"
+                        i = 1
+                        @button class:cssClass("runButton"),      style:"#{w};right:0;top:0;position:absolute;z-index:1000000", "▶"
+                        @button class:cssClass("enlargeButton"),  style:"#{w};right:#{px*(i++)}px;top:0;position:absolute;z-index:1000000", "⬜"
+                        @button class:cssClass("dragButton"),     style:"#{w};right:#{px*(i++)}px;top:0;position:absolute;z-index:1000000", "⛶"
+                        @button class:cssClass("shrinkButton"),   style:"#{w};right:#{px*(i++)}px;top:0;position:absolute;z-index:1000000", "▫"
+                        @button class:cssClass("killButton"),     style:"#{w};right:#{px*(i++)}px;top:0;position:absolute;z-index:1000000", "⨯"
+                        @textarea class:"#{cssClass("coffeeArea")} editArea", (text ? "# Welcome to CoffeeCharnia!")
+                        ####
+                          # Press return twice after a statement to execute it!
+              
+                          
+                footer: (opts)->
+                  @style """
+                    .#{containerClass} div.#{cssClass 'thisFooter'}, .#{containerClass} .#{cssClass 'thisFooter'} div { text-align:center; }
+                    """
+                  @div class:cssClass('thisFooter'), opts, ->
+                    @style """
+                      .#{containerClass} div.#{cssClass 'thisFooter'} div.#{cssClass 'resultFooter'} {
+                        /* overflow:auto; */
+                        vertical-align: middle;
+                      }
+                      .#{containerClass} div.#{cssClass 'thisFooter'} div.#{cssClass 'resultDatum'} {
+                        text-align:initial;
+                        vertical-align:initial;
+                        display:inline-block;
+                      }
+                      """
+                    @div class:cssClass("resultFooter"), style:"display:none", ->
+                      @div class:cssClass("resultDatum"), ->
+                    @div class:cssClass("introFooter"), ->
+                      @b "CoffeeCharnia"
+                      @span ->
+                        @span ": "
+                        @i "A Reflective Coffescript Console/Editor!"
+                      @printHtml " &bull; "
+                      @a href:"https://github.com/rev22/reflective-coffeescript", "Reflective Coffeescript"
+              __proto__: @
+            __proto__: HtmlGizmo
+
+        spawn: (opts)@>
+          { target, text } = opts if opts?
+          charnia = (@view then @__proto__ else @)
+          { coffeescriptUrl } = @config
+          { aceUrl, htmlGizmo } = @
+          { document, window, DynmodPrinter, Error, camelcapBookmarklet, htmlcup, aceRefcoffeeMode } = @lib
+          htmlcup = htmlcup.compileLib()
+
+          element = htmlcup.captureFirstTag -> htmlGizmo = htmlGizmo.make @, { controller: charnia, text }
+          htmlGizmo.setElement element
+          document.body.appendChild element
+          
+          withAce = (cb)-> charnia.jsLoad 'ace', aceUrl, cb
+          withCoffee = (cb)-> charnia.jsLoad 'CoffeeScript', coffeescriptUrl, cb
+          withAce -> withCoffee ->
             
             window.coffeecharnia = app =
+              target: target
+            
               libs:
                 CoffeeScript: window.CoffeeScript
-                aceRefcoffeeMode: globalLibs.aceRefcoffeeMode
+                aceRefcoffeeMode: aceRefcoffeeMode
                 ace: window.ace
                 DynmodPrinter: DynmodPrinter
                 camelcapBookmarklet: camelcapBookmarklet
@@ -858,7 +861,7 @@ htmlcup.html lang:"en", manifest:"coffeecharnia.appcache", style:"height:100%", 
               global: window.eval 'window'
               window: window
           
-              view: ((x)-> r = {}; r[v] = htmlgizmo.getElement(v) for v in x.split(","); r.coffeecharniaConsole = element; r ) "coffeeArea,runButton,enlargeButton,dragButton,shrinkButton,killButton,introFooter,resultFooter,resultDatum"
+              view: ((x)-> r = {}; r[v] = htmlGizmo.getElement(v) for v in x.split(","); r.coffeecharniaConsole = element; r ) "coffeeArea,runButton,enlargeButton,dragButton,shrinkButton,killButton,introFooter,resultFooter,resultDatum"
                        
               # ace: ace ? null
               # setupAce: @> @ace.edit(@view.coffeeArea)
@@ -867,7 +870,7 @@ htmlcup.html lang:"en", manifest:"coffeecharnia.appcache", style:"height:100%", 
           
               files: { }
           
-              __proto__: coffeecharniaBase
+              __proto__: charnia
           
             app.setup()
           
