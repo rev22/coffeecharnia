@@ -827,6 +827,7 @@ window.coffeecharnia =
   
     element = htmlcup.captureFirstTag -> htmlGizmo = htmlGizmo.make @, { controller: charnia, text }
     htmlGizmo.setElement element
+    
     document.body.appendChild element
     
     withAce = (cb)-> charnia.jsLoad 'ace', aceUrl, cb
