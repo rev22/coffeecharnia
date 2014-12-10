@@ -2,7 +2,7 @@ window.coffeecharnia =
   config:
     coffeescriptUrl: "coffee-script.js" # "lib/coffee-script.js"        
   pkgInfo:
-    version: "CoffeeCharnia 0.3.45"
+    version: "CoffeeCharnia 0.3.46"
     description: "Reflective CoffeeScript Console"
     copyright: "Copyright (c) 2014 Michele Bini"
     license: "GPL3"
@@ -11,7 +11,7 @@ window.coffeecharnia =
     { filter } = options if options?
     # Edit only reflective methods and constants by default
     filter ?= (k,v)-> (typeof v is 'function' and v.coffee?) or (typeof v in [ 'boolean', 'number', 'string']) or v is null
-    text = @libs.DynmodPrinter.withFilter(filter).limitLines(5000).print(target)
+    text = @lib.DynmodPrinter.withFilter(filter).limitLines(5000).print(target)
     @spawn { target, text }
 
   exit: @>
@@ -54,7 +54,7 @@ window.coffeecharnia =
   preQuote: (x)@> "<pre>#{ x.replace /</g, "&lt;" }</pre>"
                  
   printVal: (x)@>
-      @preQuote(@libs.DynmodPrinter.limitLines(1000).print(x))
+      @preQuote(@lib.DynmodPrinter.limitLines(1000).print(x))
       # x.toString()
                  
   recalculateTextareaSize: @>
@@ -307,8 +307,6 @@ window.coffeecharnia =
       columns:
         74
       console: console
-      window: window
-      global: window
       globalName: "window"
       symbolicPackages: true
       # maxLines: 1000
@@ -817,6 +815,8 @@ window.coffeecharnia =
         __proto__: @
       __proto__: HtmlGizmo
   
+  global: window.eval 'window'
+  window: window
   spawn: (opts)@>
     { target, text } = opts if opts?
     charnia = (@view then @__proto__ else @)
@@ -841,14 +841,10 @@ window.coffeecharnia =
           CoffeeScript: window.CoffeeScript
           aceRefcoffeeMode: aceRefcoffeeMode
           ace: window.ace
-          DynmodPrinter: DynmodPrinter
-          camelcapBookmarklet: camelcapBookmarklet
         
         eval: window.eval
         setTimeout: window.setTimeout
         getInputSelection: window.getInputSelection
-        global: window.eval 'window'
-        window: window
     
         view: ((x)-> r = {}; r[v] = htmlGizmo.getElement(v) for v in x.split(","); r.coffeecharniaConsole = element; r ) "coffeeArea,runButton,enlargeButton,dragButton,shrinkButton,killButton,introFooter,resultFooter,resultDatum"
                  
