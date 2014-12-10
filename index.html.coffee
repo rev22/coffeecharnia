@@ -17,6 +17,7 @@
 htmlcup.html lang:"en", manifest:"coffeecharnia.appcache", style:"height:100%", ->
   @head ->
     @meta charset:"utf-8"
+    @title "CoffeeCharnia"
   @body ->
     @script src:"coffeecharnia.js"
     @script "( { sizePercentage: 100, __proto__: coffeecharnia } ).spawn()"
