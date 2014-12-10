@@ -808,7 +808,7 @@ window.coffeecharnia =
               @div class:cssClass("resultFooter"), style:"display:none", ->
                 @div class:cssClass("resultDatum"), ->
               @div class:cssClass("introFooter"), ->
-                @b "CoffeeCharnia"
+                @b controller.pkgInfo.version
                 @span ->
                   @span ": "
                   @i "A Reflective Coffescript Console/Editor!"
