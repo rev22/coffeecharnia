@@ -10,3 +10,6 @@ clean:
 
 coffee-script.js: ../../reflective-coffeescript/extras/coffee-script.js
 	cp -av $< $@
+
+coffeecharnia.coffee: ../coffeecharnia.coffee
+	( cat $<; echo; echo 'window.coffeecharnia.spawn()' ) >$@

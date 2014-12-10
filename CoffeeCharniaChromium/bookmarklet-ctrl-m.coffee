@@ -1,5 +1,5 @@
 do->
-  version = "0.2.42"
+  version = "0.3.45-4"
   document.coffeecharniaBookmarkletVersion = version
   v = "?version=#{version}"
   injectSrc = chrome.extension.getURL("coffeecharnia.js") + v
@@ -17,7 +17,7 @@ do->
       e.preventDefault()
       e.stopPropagation()
       loadUp(coffeescriptUrl)
-      loadUp()
+      loadUp null
 
   document.addEventListener("keydown", h, false)
 
