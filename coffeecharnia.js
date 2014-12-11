@@ -592,10 +592,10 @@ window.coffeecharnia = {
         };
       }),
       print: (function(x) {
-        x.coffee = "(x, prev, depth = 0, ind = \"\")@>\n          p = arguments.callee\n          depth = depth + 1\n          print = (y)=> p.call @, y, { prev, x }, depth\n          clean = (x)->\n            if /^[(]([(@][^\\n]*)[)]$/.test x\n              x.substring(1, x.length - 1)\n            else\n              x\n          if x == null\n            ind + \"null\"\n          else if x == @global\n            ind + @globalName\n          else if x == undefined\n            ind + \"undefined\"\n          else\n            t = typeof x\n            if t is \"boolean\"\n              ind + if x then \"true\" else \"false\"\n            else if t is \"number\"\n              ind + @printNumber x\n            else if t is \"string\"\n              if x.length > 8 and /\\n/.test x\n                l = x.split(\"\\n\")\n                l = (x.replace /\\\"\\\"\\\"/g, '\\\"\\\"\\\"' for x in l)\n                l.unshift ind + '\"\"\"'\n                l.push     ind + '\"\"\"'\n                l.join(ind + \"\\n\")\n              else\n                ind + '\"' + x.replace(/\\\"/g, \"\\\\\\\"\") + '\"'\n            else if t is \"function\"\n              ni = ind + \"  \"\n              if x.coffee?\n                # YAY a reflective function!!!\n                s = x.coffee\n                if depth is 1 or /\\n/.test s\n                  lines = s.split \"\\n\"\n                  if lines.length > 1\n                    if (mn = lines[1].match(/^[ \\t]+/))?\n                      mn = mn[0].length\n                      id = mn - ni.length\n                      if id > 0\n                        x = new @RegExp(\"[ \\\\t]{#{id}}\")\n                        lines = (line.replace x, \"\" for line in lines)\n                      else if id < 0\n                        ni = @Array(-id + 1).join(\" \")\n                        lines = (ni + line for line in lines)                \n                  lines.join(\"\\n\")\n                else\n                  ind + \"(\" + s + \")\"\n              else\n                ind + x.toString().replace(/\\n/g, '\\n' + ni)\n            else if (c = (do (p = prev, c = 1)-> (return c if p.x == x; p = p.prev; c++) while p?; 0))\n              # Report cyclic structures\n              \"<cycle-#{c}+#{depth - c - 1}>\"\n            else if t isnt \"object\"\n              # print object of odd type\n              \"<#{t}>\"\n            else if @Array.isArray x\n              if x.length is 0\n                \"[ ]\"\n              else\n                cl = 2\n                hasLines = false\n                xxxx = for xx in x\n                  break unless @newline()\n                  xx = print xx\n                  hasLines = true if /\\n/.test xx\n                  cl += 2 + xx.length\n                  xx\n                if not hasLines and depth * 2 + cl + 1 < @columns\n                  \"[ \" + xxxx.join(\", \") + \" ]\"\n                else\n                  ni = ind + \"  \"\n                  l = [ ind + \"[\" ]\n                  for xx in xxxx\n                    l.push ni + clean(xx).replace(/\\n/g, '\\n' + ni)\n                  l.push ind + \"]\"\n                  l.join \"\\n\"\n            else\n              l = [ ]\n              @window?.document?   and   x.id?   and   typeof x.id is \"string\"   and   x is @window.document.getElementById x.id   then\n                return \"#{ind}window.document.getElementById '#{ x.id.replace(/\\'/, \"\\\\'\") }'\"\n              @symbolicPackages and depth > 1 and (packageVersion = x.pkgInfo?.version)? then\n                return ind + \"dynmodArchive.load '\" + packageVersion.replace(/\\ .*/, \"\") + \"'\"\n              ind = \"\"\n              if x instanceof @Date\n                return \"new Date(\\\"#{x.toISOString()}\\\")\"\n              keys = if (kvFilter = @filter)?\n                  for k,v of x\n                      continue unless kvFilter(k,v)\n                      k\n              else \n                  k for k of x\n              if keys.length is 0\n                return \"{ }\"\n              unless (!prev? or typeof prev.x is \"object\" and !@Array.isArray prev.x)\n                l = [ \"do->\" ]\n                ind = \"  \"\n              ni = ind + \"  \"\n              # keys = (h)@> (x for x of h).sort()\n              for k in keys\n                break unless @newline()\n                v = x[k]\n                if @global[k] is v\n                  # l.push ind + k + \": eval \" + \"'\" + k + \"'\"\n                  l.push \"#{ind}#{k}: #{@globalName}.#{k}\"\n                else\n                  v = clean(print v).replace(/\\n/g, '\\n' + ni)\n                  if !/\\n/.test(v) and  ind.length + k.toString().length + 2 + v.length < @columns\n                    l.push ind + k + \": \" + v\n                  else\n                    l.push ind + k + \":\"\n                    l.push ni + v\n              if l.length\n                l.join \"\\n\"\n              else\n                \"{ }\"";
+        x.coffee = "(x, prev, depth = 0, ind = \"\")@>\n          p = arguments.callee\n          depth = depth + 1\n          print = (y)=> p.call @, y, { prev, x }, depth\n          clean = (x)->\n            if /^[(]([(@][^\\n]*)[)]$/.test x\n              x.substring(1, x.length - 1)\n            else\n              x\n          if x == null\n            ind + \"null\"\n          else if x == @global\n            ind + @globalName\n          else if x == undefined\n            ind + \"undefined\"\n          else\n            t = typeof x\n            if t is \"boolean\"\n              ind + if x then \"true\" else \"false\"\n            else if t is \"number\"\n              ind + @printNumber x\n            else if t is \"string\"\n              if x.length > 8 and /\\n/.test x\n                l = x.split(\"\\n\")\n                l = (x.replace /\\\"\\\"\\\"/g, '\\\"\\\"\\\"' for x in l)\n                l.unshift ind + '\"\"\"'\n                l.push     ind + '\"\"\"'\n                l.join(ind + \"\\n\")\n              else\n                ind + '\"' + x.replace(/\\\"/g, \"\\\\\\\"\") + '\"'\n            else if t is \"function\"\n              ni = ind + \"  \"\n              if x.coffee?\n                # YAY a reflective function!!!\n                s = x.coffee\n                if depth is 1 or /\\n/.test s\n                  lines = s.split \"\\n\"\n                  if lines.length > 1\n                    if (mn = lines[1].match(/^[ \\t]+/))?\n                      mn = mn[0].length\n                      id = mn - ni.length\n                      if id > 0\n                        x = new @RegExp(\"[ \\\\t]{#{id}}\")\n                        lines = (line.replace x, \"\" for line in lines)\n                      else if id < 0\n                        ni = @Array(-id + 1).join(\" \")\n                        lines = (ni + line for line in lines)                \n                  lines.join(\"\\n\")\n                else\n                  ind + \"(\" + s + \")\"\n              else\n                ind + x.toString().replace(/\\n/g, '\\n' + ni)\n            else if (c = (do (p = prev, c = 1)-> (return c if p.x == x; p = p.prev; c++) while p?; 0))\n              # Report cyclic structures\n              \"<cycle-#{c}+#{depth - c - 1}>\"\n            else if t isnt \"object\"\n              # print object of odd type\n              \"<#{t}>\"\n            else if @Array.isArray x\n              if x.length is 0\n                \"[ ]\"\n              else\n                cl = 2\n                hasLines = false\n                xxxx = for xx in x\n                  break unless @newline()\n                  xx = print xx\n                  hasLines = true if /\\n/.test xx\n                  cl += 2 + xx.length\n                  xx\n                if not hasLines and depth * 2 + cl + 1 < @columns\n                  \"[ \" + xxxx.join(\", \") + \" ]\"\n                else\n                  ni = ind + \"  \"\n                  l = [ ind + \"[\" ]\n                  for xx in xxxx\n                    l.push ni + clean(xx).replace(/\\n/g, '\\n' + ni)\n                  l.push ind + \"]\"\n                  l.join \"\\n\"\n            else\n              l = [ ]\n              @window?.document?   and   x.id?   and   typeof x.id is \"string\"   and   x is @window.document.getElementById x.id   then\n                return \"#{ind}window.document.getElementById '#{ x.id.replace(/\\'/, \"\\\\'\") }'\"\n              @symbolicPackages and depth > 1 and (packageVersion = x.pkgInfo?.version)? then\n                return ind + \"dynmodArchive.load '\" + packageVersion.replace(/\\ .*/, \"\") + \"'\"\n              ind = \"\"\n              if x instanceof @Date\n                return \"new Date(\\\"#{x.toISOString()}\\\")\"\n              keys = (k for k of x)\n              if keys.length is 0\n                return \"{ }\"\n              unless (!prev? or typeof prev.x is \"object\" and !@Array.isArray prev.x)\n                l = [ \"do->\" ]\n                ind = \"  \"\n              ni = ind + \"  \"\n              # keys = (h)@> (x for x of h).sort()\n              kvFilter = @filter ? (-> true)\n              for k in keys\n                break unless @newline()\n                v = x[k]\n                if !kvFilter(k,v)\n                  l.push \"#{ind}# #{k}: <#{typeof v}>\"\n                else if @global[k] is v\n                  # l.push ind + k + \": eval \" + \"'\" + k + \"'\"\n                  l.push \"#{ind}#{k}: #{@globalName}.#{k}\"\n                else\n                  v = clean(print v).replace(/\\n/g, '\\n' + ni)\n                  if !/\\n/.test(v) and  ind.length + k.toString().length + 2 + v.length < @columns\n                    l.push ind + k + \": \" + v\n                  else\n                    l.push ind + k + \":\"\n                    l.push ni + v\n              if l.length\n                l.join \"\\n\"\n              else\n                \"{ }\"";
         return x;
       })(function(x, prev, depth, ind) {
-        var c, cl, clean, hasLines, id, k, keys, kvFilter, l, line, lines, mn, ni, p, packageVersion, print, s, t, v, xx, xxxx, _i, _j, _len, _len1, _ref, _ref1;
+        var c, cl, clean, hasLines, id, k, keys, kvFilter, l, line, lines, mn, ni, p, packageVersion, print, s, t, v, xx, xxxx, _i, _j, _len, _len1, _ref, _ref1, _ref2;
         if (depth == null) {
           depth = 0;
         }
@@ -753,25 +753,13 @@ window.coffeecharnia = {
               return "new Date(\"" + (x.toISOString()) + "\")";
             }
             keys = (function() {
-              var _results, _results1;
-              if ((kvFilter = this.filter) != null) {
-                _results = [];
-                for (k in x) {
-                  v = x[k];
-                  if (!kvFilter(k, v)) {
-                    continue;
-                  }
-                  _results.push(k);
-                }
-                return _results;
-              } else {
-                _results1 = [];
-                for (k in x) {
-                  _results1.push(k);
-                }
-                return _results1;
+              var _results;
+              _results = [];
+              for (k in x) {
+                _results.push(k);
               }
-            }).call(this);
+              return _results;
+            })();
             if (keys.length === 0) {
               return "{ }";
             }
@@ -780,13 +768,18 @@ window.coffeecharnia = {
               ind = "  ";
             }
             ni = ind + "  ";
+            kvFilter = (_ref2 = this.filter) != null ? _ref2 : (function() {
+              return true;
+            });
             for (_j = 0, _len1 = keys.length; _j < _len1; _j++) {
               k = keys[_j];
               if (!this.newline()) {
                 break;
               }
               v = x[k];
-              if (this.global[k] === v) {
+              if (!kvFilter(k, v)) {
+                l.push("" + ind + "# " + k + ": <" + (typeof v) + ">");
+              } else if (this.global[k] === v) {
                 l.push("" + ind + k + ": " + this.globalName + "." + k);
               } else {
                 v = clean(print(v)).replace(/\n/g, '\n' + ni);

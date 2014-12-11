@@ -410,12 +410,7 @@ window.coffeecharnia =
               ind = ""
               if x instanceof @Date
                 return "new Date(\"#{x.toISOString()}\")"
-              keys = if (kvFilter = @filter)?
-                  for k,v of x
-                      continue unless kvFilter(k,v)
-                      k
-              else 
-                  k for k of x
+              keys = (k for k of x)
               if keys.length is 0
                 return "{ }"
               unless (!prev? or typeof prev.x is "object" and !@Array.isArray prev.x)
@@ -423,10 +418,13 @@ window.coffeecharnia =
                 ind = "  "
               ni = ind + "  "
               # keys = (h)@> (x for x of h).sort()
+              kvFilter = @filter ? (-> true)
               for k in keys
                 break unless @newline()
                 v = x[k]
-                if @global[k] is v
+                if !kvFilter(k,v)
+                  l.push "#{ind}# #{k}: <#{typeof v}>"
+                else if @global[k] is v
                   # l.push ind + k + ": eval " + "'" + k + "'"
                   l.push "#{ind}#{k}: #{@globalName}.#{k}"
                 else
