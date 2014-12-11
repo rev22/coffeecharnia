@@ -307,6 +307,8 @@ window.coffeecharnia =
       columns:
         74
       console: console
+      global: window
+      window: window
       globalName: "window"
       symbolicPackages: true
       # maxLines: 1000
