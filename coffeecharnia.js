@@ -6,7 +6,7 @@ window.coffeecharnia = {
     coffeescriptUrl: "coffee-script.js"
   },
   pkgInfo: {
-    version: "CoffeeCharnia 0.3.46",
+    version: "CoffeeCharnia 0.3.49",
     description: "Reflective CoffeeScript Console",
     copyright: "Copyright (c) 2014 Michele Bini",
     license: "GPL3"
@@ -38,6 +38,16 @@ window.coffeecharnia = {
     var el;
     el = this.getElement();
     return el.parentNode.removeChild(el);
+  }),
+  exec: (function(x) {
+    x.coffee = "(x)@> x.call(@) finally @exit()";
+    return x;
+  })(function(x) {
+    try {
+      return x.call(this);
+    } finally {
+      this.exit();
+    }
   }),
   inlineStyle: (function(x) {
     x.coffee = "@>\n     s = @sizePercentage ? 38\n     (g = @gravity)? then\n       [ x, y ] = g\n     else\n       x = y = 1\n     y = ([ (-> \"top:0\"),   (-> \"top:#{(100-s)/2}%\"),   (-> \"bottom:0\")  ])[y]()\n     x = ([ (-> \"left:0\"),  (-> \"left:#{(100-s)/2}%\"),  (-> \"right:0\")   ])[x]()\n     g = \"#{x};#{y}\"\n     \"position:absolute;overflow:auto;width:#{s}%;height:#{s}%;#{g};background:black;color:#ddd;text-align:initial;font-size:12px\"";
@@ -484,7 +494,7 @@ window.coffeecharnia = {
     }),
     HtmlGizmo: HtmlGizmo = {
       pkgInfo: {
-        version: "HtmlGizmo 1.0.0",
+        version: "HtmlGizmo 2.1.0",
         description: "Reflective Html Widgets",
         copyright: "Copyright (c) 2014 Michele Bini",
         license: "GPL3"
@@ -524,7 +534,34 @@ window.coffeecharnia = {
       }),
       eventHome: null,
       cssPrefix: "",
-      element: null
+      element: null,
+      make: (function(x) {
+        x.coffee = "(withHtmlcup, options)@>\n        throw \"virtual method\"\n        # Example of how to invoke this:\n        # element = (htmlGizmo = __proto__: htmlGizmo).make ((x)-> @element = htmlcup.captureFirstTag x), { controller: charnia, text }\n        cssClass = (name)=> @cssClass name\n        homeEvent = (name)=> @homeEvent name\n        containerClass = cssClass 'container'\n        withHtmlcup ->\n            @div class:containerClass, ->\n                @button onclick:homeEvent(\"click\"), \"Hello\"";
+        return x;
+      })(function(withHtmlcup, options) {
+        var containerClass, cssClass, homeEvent;
+        throw "virtual method";
+        cssClass = (function(_this) {
+          return function(name) {
+            return _this.cssClass(name);
+          };
+        })(this);
+        homeEvent = (function(_this) {
+          return function(name) {
+            return _this.homeEvent(name);
+          };
+        })(this);
+        containerClass = cssClass('container');
+        return withHtmlcup(function() {
+          return this.div({
+            "class": containerClass
+          }, function() {
+            return this.button({
+              onclick: homeEvent("click")
+            }, "Hello");
+          });
+        });
+      })
     },
     DynmodPrinter: {
       pkgInfo: {
@@ -1314,10 +1351,10 @@ window.coffeecharnia = {
     }),
     cssPrefix: "coffeecharnia_",
     make: (function(x) {
-      x.coffee = "(htmlcup, { controller, text })@>\n        cssClass = (name)=> @cssClass name\n        homeEvent = (name)=> @homeEvent name\n        containerClass = cssClass 'container'\n        @coffeecharniaLayout\n          cssClass: containerClass\n          htmlcup: htmlcup\n          style: controller.inlineStyle()\n          innerStyle:\n            \"\"\"\n            .#{containerClass} pre { background:none; color:inherit; }\n            .#{containerClass} div, .#{containerClass} pre { padding: 0; margin:0; }\n            .#{containerClass} a { color: #ffb }\n            .#{containerClass} a:visited { color: #eec }\n            .#{containerClass} a:hover { color: white }\n            \"\"\"\n          minheight: \"7em\",\n          minwidth: \"60em\",\n          head: ->\n            @meta charset:\"utf-8\"\n            @style \"\"\"\n              .#{containerClass} { background:black; color: #ddd; }\n              .#{containerClass} a { color:#5af; }\n              .#{containerClass} a:visited { color:#49f; }\n              .#{containerClass} a:hover { color:#6cf; }\n              .#{containerClass} select, textarea { border: 1px solid #555; }\n              \"\"\"\n          header: (opts)->\n            @style \"\"\"\n                div.thisHeader, .thisHeader div { text-align:center; }\n                \"\"\"\n            @div opts, ->\n              @style \"\"\"\n                /* .#{containerClass} select { min-width:5em; max-width:30%; width:18em; } */\n                .#{containerClass} select, .#{containerClass} button { font-size:inherit; text-align:center;   }\n                .#{containerClass} .button { display:inline-block; }\n                .#{containerClass} button, .#{containerClass} .button, .#{containerClass} input, .#{containerClass} select:not(:focus):not(:hover) { color:white; background:black; }\n                /* select option:not(:checked) { color:red !important; background:black !important; } */\n                /* option:active, option[selected], option:checked, option:hover, option:focus { background:#248 !important; } */\n                .#{containerClass} button, .#{containerClass} .button { min-width:5%; font-size:220%; border: 2px outset grey; }\n                .#{containerClass} button:active, .#{containerClass} .button.button-on { border: 2px inset grey; background:#248; }\n                .#{containerClass} .button input[type=\"checkbox\"] { display:none; }\n                .#{containerClass} .arrow { font-weight:bold;  }\n                .#{containerClass} .editArea { height:100%;width:100%;box-sizing:border-box; }\n                \"\"\"\n          body: (opts)->\n              @style \"\"\"\n                .#{containerClass} textarea { background: black; color: #ddd; }\n                .#{containerClass} button { opacity: 0.22; }\n                .#{containerClass} button:hover, .#{containerClass} button:focus, .#{containerClass} button:active { opacity: 1; }\n                \"\"\"\n              @div style:\"font-size:12px;position:absolute;top:0;right:0;left:0;bottom:0;overflow:hidden\", ->\n                  px = 44;\n                  w = \"width:#{px}px;max-width:#{px}px;min-width:#{px}px\"\n                  i = 1\n                  @button class:cssClass(\"runButton\"),      style:\"#{w};right:0;top:0;position:absolute;z-index:1000000\", \"▶\"\n                  @button class:cssClass(\"enlargeButton\"),  style:\"#{w};right:#{px*(i++)}px;top:0;position:absolute;z-index:1000000\", \"⬜\"\n                  @button class:cssClass(\"dragButton\"),     style:\"#{w};right:#{px*(i++)}px;top:0;position:absolute;z-index:1000000\", \"⛶\"\n                  @button class:cssClass(\"shrinkButton\"),   style:\"#{w};right:#{px*(i++)}px;top:0;position:absolute;z-index:1000000\", \"▫\"\n                  @button class:cssClass(\"killButton\"),     style:\"#{w};right:#{px*(i++)}px;top:0;position:absolute;z-index:1000000\", \"⨯\"\n                  @textarea class:\"#{cssClass(\"coffeeArea\")} editArea\", (text ? \"# Welcome to CoffeeCharnia!\")\n                  ####\n                    # Press return twice after a statement to execute it!\n        \n                    \n          footer: (opts)->\n            @style \"\"\"\n              .#{containerClass} div.#{cssClass 'thisFooter'}, .#{containerClass} .#{cssClass 'thisFooter'} div { text-align:center; }\n              \"\"\"\n            @div class:cssClass('thisFooter'), opts, ->\n              @style \"\"\"\n                .#{containerClass} div.#{cssClass 'thisFooter'} div.#{cssClass 'resultFooter'} {\n                  /* overflow:auto; */\n                  vertical-align: middle;\n                }\n                .#{containerClass} div.#{cssClass 'thisFooter'} div.#{cssClass 'resultDatum'} {\n                  text-align:initial;\n                  vertical-align:initial;\n                  display:inline-block;\n                }\n                \"\"\"\n              @div class:cssClass(\"resultFooter\"), style:\"display:none\", ->\n                @div class:cssClass(\"resultDatum\"), ->\n              @div class:cssClass(\"introFooter\"), ->\n                @b controller.pkgInfo.version\n                @span ->\n                  @span \": \"\n                  @i \"A Reflective Coffescript Console/Editor!\"\n                @printHtml \" &bull; \"\n                @a href:\"https://github.com/rev22/reflective-coffeescript\", \"Reflective Coffeescript\"\n        __proto__: @";
+      x.coffee = "(withHtmlcup, { controller, text })@>\n        cssClass = (name)=> @cssClass name\n        homeEvent = (name)=> @homeEvent name\n        containerClass = cssClass 'container'\n        i = @\n        withHtmlcup.call @, -> i.coffeecharniaLayout\n          cssClass: containerClass\n          htmlcup: @\n          style: controller.inlineStyle()\n          innerStyle:\n            \"\"\"\n            .#{containerClass} pre { background:none; color:inherit; }\n            .#{containerClass} div, .#{containerClass} pre { padding: 0; margin:0; }\n            .#{containerClass} a { color: #ffb }\n            .#{containerClass} a:visited { color: #eec }\n            .#{containerClass} a:hover { color: white }\n            \"\"\"\n          minheight: \"7em\",\n          minwidth: \"60em\",\n          head: ->\n            @meta charset:\"utf-8\"\n            @style \"\"\"\n              .#{containerClass} { background:black; color: #ddd; }\n              .#{containerClass} a { color:#5af; }\n              .#{containerClass} a:visited { color:#49f; }\n              .#{containerClass} a:hover { color:#6cf; }\n              .#{containerClass} select, textarea { border: 1px solid #555; }\n              \"\"\"\n          header: (opts)->\n            @style \"\"\"\n                div.thisHeader, .thisHeader div { text-align:center; }\n                \"\"\"\n            @div opts, ->\n              @style \"\"\"\n                /* .#{containerClass} select { min-width:5em; max-width:30%; width:18em; } */\n                .#{containerClass} select, .#{containerClass} button { font-size:inherit; text-align:center;   }\n                .#{containerClass} .button { display:inline-block; }\n                .#{containerClass} button, .#{containerClass} .button, .#{containerClass} input, .#{containerClass} select:not(:focus):not(:hover) { color:white; background:black; }\n                /* select option:not(:checked) { color:red !important; background:black !important; } */\n                /* option:active, option[selected], option:checked, option:hover, option:focus { background:#248 !important; } */\n                .#{containerClass} button, .#{containerClass} .button { min-width:5%; font-size:220%; border: 2px outset grey; }\n                .#{containerClass} button:active, .#{containerClass} .button.button-on { border: 2px inset grey; background:#248; }\n                .#{containerClass} .button input[type=\"checkbox\"] { display:none; }\n                .#{containerClass} .arrow { font-weight:bold;  }\n                .#{containerClass} .editArea { height:100%;width:100%;box-sizing:border-box; }\n                \"\"\"\n          body: (opts)->\n              @style \"\"\"\n                .#{containerClass} textarea { background: black; color: #ddd; }\n                .#{containerClass} button { opacity: 0.22; }\n                .#{containerClass} button:hover, .#{containerClass} button:focus, .#{containerClass} button:active { opacity: 1; }\n                \"\"\"\n              @div style:\"font-size:12px;position:absolute;top:0;right:0;left:0;bottom:0;overflow:hidden\", ->\n                  px = 44;\n                  w = \"width:#{px}px;max-width:#{px}px;min-width:#{px}px\"\n                  i = 1\n                  @button class:cssClass(\"runButton\"),      style:\"#{w};right:0;top:0;position:absolute;z-index:1000000\", \"▶\"\n                  @button class:cssClass(\"enlargeButton\"),  style:\"#{w};right:#{px*(i++)}px;top:0;position:absolute;z-index:1000000\", \"⬜\"\n                  @button class:cssClass(\"dragButton\"),     style:\"#{w};right:#{px*(i++)}px;top:0;position:absolute;z-index:1000000\", \"⛶\"\n                  @button class:cssClass(\"shrinkButton\"),   style:\"#{w};right:#{px*(i++)}px;top:0;position:absolute;z-index:1000000\", \"▫\"\n                  @button class:cssClass(\"killButton\"),     style:\"#{w};right:#{px*(i++)}px;top:0;position:absolute;z-index:1000000\", \"⨯\"\n                  @textarea class:\"#{cssClass(\"coffeeArea\")} editArea\", (text ? \"# Welcome to CoffeeCharnia!\")\n                  ####\n                    # Press return twice after a statement to execute it!\n        \n                    \n          footer: (opts)->\n            @style \"\"\"\n              .#{containerClass} div.#{cssClass 'thisFooter'}, .#{containerClass} .#{cssClass 'thisFooter'} div { text-align:center; }\n              \"\"\"\n            @div class:cssClass('thisFooter'), opts, ->\n              @style \"\"\"\n                .#{containerClass} div.#{cssClass 'thisFooter'} div.#{cssClass 'resultFooter'} {\n                  /* overflow:auto; */\n                  vertical-align: middle;\n                }\n                .#{containerClass} div.#{cssClass 'thisFooter'} div.#{cssClass 'resultDatum'} {\n                  text-align:initial;\n                  vertical-align:initial;\n                  display:inline-block;\n                }\n                \"\"\"\n              @div class:cssClass(\"resultFooter\"), style:\"display:none\", ->\n                @div class:cssClass(\"resultDatum\"), ->\n              @div class:cssClass(\"introFooter\"), ->\n                @b controller.pkgInfo.version\n                @span ->\n                  @span \": \"\n                  @i \"A Reflective Coffescript Console/Editor!\"\n                @printHtml \" &bull; \"\n                @a href:\"https://github.com/rev22/reflective-coffeescript\", \"Reflective Coffeescript\"";
       return x;
-    })(function(htmlcup, _arg) {
-      var containerClass, controller, cssClass, homeEvent, text;
+    })(function(withHtmlcup, _arg) {
+      var containerClass, controller, cssClass, homeEvent, i, text;
       controller = _arg.controller, text = _arg.text;
       cssClass = (function(_this) {
         return function(name) {
@@ -1330,99 +1367,99 @@ window.coffeecharnia = {
         };
       })(this);
       containerClass = cssClass('container');
-      this.coffeecharniaLayout({
-        cssClass: containerClass,
-        htmlcup: htmlcup,
-        style: controller.inlineStyle(),
-        innerStyle: "." + containerClass + " pre { background:none; color:inherit; }\n." + containerClass + " div, ." + containerClass + " pre { padding: 0; margin:0; }\n." + containerClass + " a { color: #ffb }\n." + containerClass + " a:visited { color: #eec }\n." + containerClass + " a:hover { color: white }",
-        minheight: "7em",
-        minwidth: "60em",
-        head: function() {
-          this.meta({
-            charset: "utf-8"
-          });
-          return this.style("." + containerClass + " { background:black; color: #ddd; }\n." + containerClass + " a { color:#5af; }\n." + containerClass + " a:visited { color:#49f; }\n." + containerClass + " a:hover { color:#6cf; }\n." + containerClass + " select, textarea { border: 1px solid #555; }");
-        },
-        header: function(opts) {
-          this.style("div.thisHeader, .thisHeader div { text-align:center; }");
-          return this.div(opts, function() {
-            return this.style("/* ." + containerClass + " select { min-width:5em; max-width:30%; width:18em; } */\n." + containerClass + " select, ." + containerClass + " button { font-size:inherit; text-align:center;   }\n." + containerClass + " .button { display:inline-block; }\n." + containerClass + " button, ." + containerClass + " .button, ." + containerClass + " input, ." + containerClass + " select:not(:focus):not(:hover) { color:white; background:black; }\n/* select option:not(:checked) { color:red !important; background:black !important; } */\n/* option:active, option[selected], option:checked, option:hover, option:focus { background:#248 !important; } */\n." + containerClass + " button, ." + containerClass + " .button { min-width:5%; font-size:220%; border: 2px outset grey; }\n." + containerClass + " button:active, ." + containerClass + " .button.button-on { border: 2px inset grey; background:#248; }\n." + containerClass + " .button input[type=\"checkbox\"] { display:none; }\n." + containerClass + " .arrow { font-weight:bold;  }\n." + containerClass + " .editArea { height:100%;width:100%;box-sizing:border-box; }");
-          });
-        },
-        body: function(opts) {
-          this.style("." + containerClass + " textarea { background: black; color: #ddd; }\n." + containerClass + " button { opacity: 0.22; }\n." + containerClass + " button:hover, ." + containerClass + " button:focus, ." + containerClass + " button:active { opacity: 1; }");
-          return this.div({
-            style: "font-size:12px;position:absolute;top:0;right:0;left:0;bottom:0;overflow:hidden"
-          }, function() {
-            var i, px, w;
-            px = 44;
-            w = "width:" + px + "px;max-width:" + px + "px;min-width:" + px + "px";
-            i = 1;
-            this.button({
-              "class": cssClass("runButton"),
-              style: "" + w + ";right:0;top:0;position:absolute;z-index:1000000"
-            }, "▶");
-            this.button({
-              "class": cssClass("enlargeButton"),
-              style: "" + w + ";right:" + (px * (i++)) + "px;top:0;position:absolute;z-index:1000000"
-            }, "⬜");
-            this.button({
-              "class": cssClass("dragButton"),
-              style: "" + w + ";right:" + (px * (i++)) + "px;top:0;position:absolute;z-index:1000000"
-            }, "⛶");
-            this.button({
-              "class": cssClass("shrinkButton"),
-              style: "" + w + ";right:" + (px * (i++)) + "px;top:0;position:absolute;z-index:1000000"
-            }, "▫");
-            this.button({
-              "class": cssClass("killButton"),
-              style: "" + w + ";right:" + (px * (i++)) + "px;top:0;position:absolute;z-index:1000000"
-            }, "⨯");
-            return this.textarea({
-              "class": "" + (cssClass("coffeeArea")) + " editArea"
-            }, text != null ? text : "# Welcome to CoffeeCharnia!");
-          });
-        },
-        footer: function(opts) {
-          this.style("." + containerClass + " div." + (cssClass('thisFooter')) + ", ." + containerClass + " ." + (cssClass('thisFooter')) + " div { text-align:center; }");
-          return this.div({
-            "class": cssClass('thisFooter')
-          }, opts, function() {
-            this.style("." + containerClass + " div." + (cssClass('thisFooter')) + " div." + (cssClass('resultFooter')) + " {\n  /* overflow:auto; */\n  vertical-align: middle;\n}\n." + containerClass + " div." + (cssClass('thisFooter')) + " div." + (cssClass('resultDatum')) + " {\n  text-align:initial;\n  vertical-align:initial;\n  display:inline-block;\n}");
-            this.div({
-              "class": cssClass("resultFooter"),
-              style: "display:none"
-            }, function() {
-              return this.div({
-                "class": cssClass("resultDatum")
-              }, function() {});
+      i = this;
+      return withHtmlcup.call(this, function() {
+        return i.coffeecharniaLayout({
+          cssClass: containerClass,
+          htmlcup: this,
+          style: controller.inlineStyle(),
+          innerStyle: "." + containerClass + " pre { background:none; color:inherit; }\n." + containerClass + " div, ." + containerClass + " pre { padding: 0; margin:0; }\n." + containerClass + " a { color: #ffb }\n." + containerClass + " a:visited { color: #eec }\n." + containerClass + " a:hover { color: white }",
+          minheight: "7em",
+          minwidth: "60em",
+          head: function() {
+            this.meta({
+              charset: "utf-8"
             });
+            return this.style("." + containerClass + " { background:black; color: #ddd; }\n." + containerClass + " a { color:#5af; }\n." + containerClass + " a:visited { color:#49f; }\n." + containerClass + " a:hover { color:#6cf; }\n." + containerClass + " select, textarea { border: 1px solid #555; }");
+          },
+          header: function(opts) {
+            this.style("div.thisHeader, .thisHeader div { text-align:center; }");
+            return this.div(opts, function() {
+              return this.style("/* ." + containerClass + " select { min-width:5em; max-width:30%; width:18em; } */\n." + containerClass + " select, ." + containerClass + " button { font-size:inherit; text-align:center;   }\n." + containerClass + " .button { display:inline-block; }\n." + containerClass + " button, ." + containerClass + " .button, ." + containerClass + " input, ." + containerClass + " select:not(:focus):not(:hover) { color:white; background:black; }\n/* select option:not(:checked) { color:red !important; background:black !important; } */\n/* option:active, option[selected], option:checked, option:hover, option:focus { background:#248 !important; } */\n." + containerClass + " button, ." + containerClass + " .button { min-width:5%; font-size:220%; border: 2px outset grey; }\n." + containerClass + " button:active, ." + containerClass + " .button.button-on { border: 2px inset grey; background:#248; }\n." + containerClass + " .button input[type=\"checkbox\"] { display:none; }\n." + containerClass + " .arrow { font-weight:bold;  }\n." + containerClass + " .editArea { height:100%;width:100%;box-sizing:border-box; }");
+            });
+          },
+          body: function(opts) {
+            this.style("." + containerClass + " textarea { background: black; color: #ddd; }\n." + containerClass + " button { opacity: 0.22; }\n." + containerClass + " button:hover, ." + containerClass + " button:focus, ." + containerClass + " button:active { opacity: 1; }");
             return this.div({
-              "class": cssClass("introFooter")
+              style: "font-size:12px;position:absolute;top:0;right:0;left:0;bottom:0;overflow:hidden"
             }, function() {
-              this.b(controller.pkgInfo.version);
-              this.span(function() {
-                this.span(": ");
-                return this.i("A Reflective Coffescript Console/Editor!");
-              });
-              this.printHtml(" &bull; ");
-              return this.a({
-                href: "https://github.com/rev22/reflective-coffeescript"
-              }, "Reflective Coffeescript");
+              var px, w;
+              px = 44;
+              w = "width:" + px + "px;max-width:" + px + "px;min-width:" + px + "px";
+              i = 1;
+              this.button({
+                "class": cssClass("runButton"),
+                style: "" + w + ";right:0;top:0;position:absolute;z-index:1000000"
+              }, "▶");
+              this.button({
+                "class": cssClass("enlargeButton"),
+                style: "" + w + ";right:" + (px * (i++)) + "px;top:0;position:absolute;z-index:1000000"
+              }, "⬜");
+              this.button({
+                "class": cssClass("dragButton"),
+                style: "" + w + ";right:" + (px * (i++)) + "px;top:0;position:absolute;z-index:1000000"
+              }, "⛶");
+              this.button({
+                "class": cssClass("shrinkButton"),
+                style: "" + w + ";right:" + (px * (i++)) + "px;top:0;position:absolute;z-index:1000000"
+              }, "▫");
+              this.button({
+                "class": cssClass("killButton"),
+                style: "" + w + ";right:" + (px * (i++)) + "px;top:0;position:absolute;z-index:1000000"
+              }, "⨯");
+              return this.textarea({
+                "class": "" + (cssClass("coffeeArea")) + " editArea"
+              }, text != null ? text : "# Welcome to CoffeeCharnia!");
             });
-          });
-        }
+          },
+          footer: function(opts) {
+            this.style("." + containerClass + " div." + (cssClass('thisFooter')) + ", ." + containerClass + " ." + (cssClass('thisFooter')) + " div { text-align:center; }");
+            return this.div({
+              "class": cssClass('thisFooter')
+            }, opts, function() {
+              this.style("." + containerClass + " div." + (cssClass('thisFooter')) + " div." + (cssClass('resultFooter')) + " {\n  /* overflow:auto; */\n  vertical-align: middle;\n}\n." + containerClass + " div." + (cssClass('thisFooter')) + " div." + (cssClass('resultDatum')) + " {\n  text-align:initial;\n  vertical-align:initial;\n  display:inline-block;\n}");
+              this.div({
+                "class": cssClass("resultFooter"),
+                style: "display:none"
+              }, function() {
+                return this.div({
+                  "class": cssClass("resultDatum")
+                }, function() {});
+              });
+              return this.div({
+                "class": cssClass("introFooter")
+              }, function() {
+                this.b(controller.pkgInfo.version);
+                this.span(function() {
+                  this.span(": ");
+                  return this.i("A Reflective Coffescript Console/Editor!");
+                });
+                this.printHtml(" &bull; ");
+                return this.a({
+                  href: "https://github.com/rev22/reflective-coffeescript"
+                }, "Reflective Coffeescript");
+              });
+            });
+          }
+        });
       });
-      return {
-        __proto__: this
-      };
     }),
     __proto__: HtmlGizmo
   },
   global: window["eval"]('window'),
   window: window,
   spawn: (function(x) {
-    x.coffee = "(opts)@>\n    { target, text } = opts if opts?\n    charnia = (@view then @__proto__ else @)\n    { coffeescriptUrl } = @config\n    { aceUrl, htmlGizmo } = @\n    { document, window, DynmodPrinter, Error, camelcapBookmarklet, htmlcup, aceRefcoffeeMode } = @lib\n    htmlcup = htmlcup.compileLib()\n  \n    element = htmlcup.captureFirstTag -> htmlGizmo = htmlGizmo.make @, { controller: charnia, text }\n    htmlGizmo.setElement element\n    \n    document.body.appendChild element\n    \n    withAce = (cb)-> charnia.jsLoad 'ace', aceUrl, cb\n    withCoffee = (cb)-> charnia.jsLoad 'CoffeeScript', coffeescriptUrl, cb\n    withAce -> withCoffee ->\n      \n      window.coffeecharnia = app =\n        target: target\n      \n        libs:\n          CoffeeScript: window.CoffeeScript\n          aceRefcoffeeMode: aceRefcoffeeMode\n          ace: window.ace\n        \n        eval: window.eval\n        setTimeout: window.setTimeout\n        getInputSelection: window.getInputSelection\n    \n        view: ((x)-> r = {}; r[v] = htmlGizmo.getElement(v) for v in x.split(\",\"); r.coffeecharniaConsole = element; r ) \"coffeeArea,runButton,enlargeButton,dragButton,shrinkButton,killButton,introFooter,resultFooter,resultDatum\"\n                 \n        # ace: ace ? null\n        # setupAce: @> @ace.edit(@view.coffeeArea)\n    \n        Error: Error\n    \n        files: { }\n    \n        __proto__: charnia\n    \n      app.setup()\n    \n      \n      # Some sane defaults!  However, this code does not seem to effect any change\n      ###\n      false then ace?.options =\n          mode:             \"coffee\"\n          theme:            \"cobalt\"\n          gutter:           \"true\"\n          # fontSize:         \"10px\"\n          # softWrap:         \"off\"\n          # keybindings:      \"ace\"\n          # showPrintMargin:  \"true\"\n          # useSoftTabs:      \"true\"\n          # showInvisibles:   \"false\"\n      ###\n      inject = (options, callback) ->\n        baseUrl = options.baseUrl or \"../../src-noconflict\"\n        load = (path, callback) ->\n          head = document.getElementsByTagName(\"head\")[0]\n          s = document.createElement(\"script\")\n          s.src = baseUrl + \"/\" + path\n          head.appendChild s\n          s.onload = s.onreadystatechange = (_, isAbort) ->\n            if isAbort or not s.readyState or s.readyState is \"loaded\" or s.readyState is \"complete\"\n              s = s.onload = s.onreadystatechange = null\n              callback()  unless isAbort\n            return\n    \n          return\n    \n        if window.ace?\n          \n          # load(\"ace.js\", function() {\n          window.ace.config.loadModule \"ace/ext/textarea\", ->\n            if false\n              event = window.ace.require(\"ace/lib/event\")\n              areas = document.getElementsByTagName(\"textarea\")\n              i = 0\n    \n              while i < areas.length\n                event.addListener areas[i], \"click\", (e) ->\n                  window.ace.transformTextarea e.target, options.ace  if e.detail is 3\n                  return\n    \n                i++\n            callback and callback()\n            return\n    \n        return\n    \n      # });\n    \n      window.ace? then camelcapBookmarklet.setup(window.ace)\n    \n      # Call the inject function to load the ace files.\n      inject {}, do (ace = window.ace)-> ->\n        \n        # Transform the textarea on the page into an ace editor.\n        for a in [ app.view.coffeeArea ] # (x for x in document.getElementsByClassName(\"editArea\")).reverse()\n          do (a, e = ace.require(\"ace/ext/textarea\").transformTextarea(a))->\n            e = ace.require(\"ace/ext/textarea\").transformTextarea(a)\n            e.navigateFileEnd()\n            a.setupTransform(e)\n            a.onchange = ->\n              # alert \"a onchange \" + x\n              e.setValue @value, -1\n              return\n    \n            e.on \"change\", ->\n              # alert \"e change \" + x\n              a.value = e.getValue()\n              a.oninput?()\n              return\n    \n            e.on \"blur\", ->\n              # alert \"e blur \" + x\n              a.value = e.getValue()\n              a.onblur?()\n              return\n    \n            e.on \"focus\", ->\n              a.onfocus?()\n              return\n        return";
+    x.coffee = "(opts)@>\n    { target, text } = opts if opts?\n    charnia = (@view then @__proto__ else @)\n    { coffeescriptUrl } = @config\n    { aceUrl, htmlGizmo } = @\n    { document, window, DynmodPrinter, Error, camelcapBookmarklet, htmlcup, aceRefcoffeeMode } = @lib\n    htmlcup = htmlcup.compileLib()\n  \n    element = (htmlGizmo = __proto__: htmlGizmo).make ((x)-> @element = htmlcup.captureFirstTag x), { controller: charnia, text }\n    \n    document.body.appendChild element\n    \n    withAce = (cb)-> charnia.jsLoad 'ace', aceUrl, cb\n    withCoffee = (cb)-> charnia.jsLoad 'CoffeeScript', coffeescriptUrl, cb\n    withAce -> withCoffee ->\n      \n      window.coffeecharnia = app =\n        target: target\n      \n        libs:\n          CoffeeScript: window.CoffeeScript\n          aceRefcoffeeMode: aceRefcoffeeMode\n          ace: window.ace\n        \n        eval: window.eval\n        setTimeout: window.setTimeout\n        getInputSelection: window.getInputSelection\n    \n        view: ((x)-> r = {}; r[v] = htmlGizmo.getElement(v) for v in x.split(\",\"); r.coffeecharniaConsole = element; r ) \"coffeeArea,runButton,enlargeButton,dragButton,shrinkButton,killButton,introFooter,resultFooter,resultDatum\"\n                 \n        # ace: ace ? null\n        # setupAce: @> @ace.edit(@view.coffeeArea)\n    \n        Error: Error\n    \n        files: { }\n    \n        __proto__: charnia\n    \n      app.setup()\n    \n      \n      # Some sane defaults!  However, this code does not seem to effect any change\n      ###\n      false then ace?.options =\n          mode:             \"coffee\"\n          theme:            \"cobalt\"\n          gutter:           \"true\"\n          # fontSize:         \"10px\"\n          # softWrap:         \"off\"\n          # keybindings:      \"ace\"\n          # showPrintMargin:  \"true\"\n          # useSoftTabs:      \"true\"\n          # showInvisibles:   \"false\"\n      ###\n      inject = (options, callback) ->\n        baseUrl = options.baseUrl or \"../../src-noconflict\"\n        load = (path, callback) ->\n          head = document.getElementsByTagName(\"head\")[0]\n          s = document.createElement(\"script\")\n          s.src = baseUrl + \"/\" + path\n          head.appendChild s\n          s.onload = s.onreadystatechange = (_, isAbort) ->\n            if isAbort or not s.readyState or s.readyState is \"loaded\" or s.readyState is \"complete\"\n              s = s.onload = s.onreadystatechange = null\n              callback()  unless isAbort\n            return\n    \n          return\n    \n        if window.ace?\n          \n          # load(\"ace.js\", function() {\n          window.ace.config.loadModule \"ace/ext/textarea\", ->\n            if false\n              event = window.ace.require(\"ace/lib/event\")\n              areas = document.getElementsByTagName(\"textarea\")\n              i = 0\n    \n              while i < areas.length\n                event.addListener areas[i], \"click\", (e) ->\n                  window.ace.transformTextarea e.target, options.ace  if e.detail is 3\n                  return\n    \n                i++\n            callback and callback()\n            return\n    \n        return\n    \n      # });\n    \n      window.ace? then camelcapBookmarklet.setup(window.ace)\n    \n      # Call the inject function to load the ace files.\n      inject {}, do (ace = window.ace)-> ->\n        \n        # Transform the textarea on the page into an ace editor.\n        for a in [ app.view.coffeeArea ] # (x for x in document.getElementsByClassName(\"editArea\")).reverse()\n          do (a, e = ace.require(\"ace/ext/textarea\").transformTextarea(a))->\n            e = ace.require(\"ace/ext/textarea\").transformTextarea(a)\n            e.navigateFileEnd()\n            a.setupTransform(e)\n            a.onchange = ->\n              # alert \"a onchange \" + x\n              e.setValue @value, -1\n              return\n    \n            e.on \"change\", ->\n              # alert \"e change \" + x\n              a.value = e.getValue()\n              a.oninput?()\n              return\n    \n            e.on \"blur\", ->\n              # alert \"e blur \" + x\n              a.value = e.getValue()\n              a.onblur?()\n              return\n    \n            e.on \"focus\", ->\n              a.onfocus?()\n              return\n        return";
     return x;
   })(function(opts) {
     var DynmodPrinter, Error, aceRefcoffeeMode, aceUrl, camelcapBookmarklet, charnia, coffeescriptUrl, document, element, htmlGizmo, htmlcup, target, text, window, withAce, withCoffee, _ref;
@@ -1434,13 +1471,14 @@ window.coffeecharnia = {
     aceUrl = this.aceUrl, htmlGizmo = this.htmlGizmo;
     _ref = this.lib, document = _ref.document, window = _ref.window, DynmodPrinter = _ref.DynmodPrinter, Error = _ref.Error, camelcapBookmarklet = _ref.camelcapBookmarklet, htmlcup = _ref.htmlcup, aceRefcoffeeMode = _ref.aceRefcoffeeMode;
     htmlcup = htmlcup.compileLib();
-    element = htmlcup.captureFirstTag(function() {
-      return htmlGizmo = htmlGizmo.make(this, {
-        controller: charnia,
-        text: text
-      });
+    element = (htmlGizmo = {
+      __proto__: htmlGizmo
+    }).make((function(x) {
+      return this.element = htmlcup.captureFirstTag(x);
+    }), {
+      controller: charnia,
+      text: text
     });
-    htmlGizmo.setElement(element);
     document.body.appendChild(element);
     withAce = function(cb) {
       return charnia.jsLoad('ace', aceUrl, cb);

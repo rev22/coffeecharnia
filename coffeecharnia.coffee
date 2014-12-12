@@ -2,7 +2,7 @@ window.coffeecharnia =
   config:
     coffeescriptUrl: "coffee-script.js" # "lib/coffee-script.js"        
   pkgInfo:
-    version: "CoffeeCharnia 0.3.46"
+    version: "CoffeeCharnia 0.3.49"
     description: "Reflective CoffeeScript Console"
     copyright: "Copyright (c) 2014 Michele Bini"
     license: "GPL3"
@@ -17,6 +17,8 @@ window.coffeecharnia =
   exit: @>
       el = @getElement()
       el.parentNode.removeChild el
+
+  exec: (x)@> x.call(@) finally @exit()
   
   inlineStyle: @>
      s = @sizePercentage ? 38
@@ -254,7 +256,7 @@ window.coffeecharnia =
     deleteNode: (x)@> x.parentNode.removeChild(x)
     HtmlGizmo: HtmlGizmo =
       pkgInfo:
-        version: "HtmlGizmo 1.0.0"
+        version: "HtmlGizmo 2.1.0"
         description: "Reflective Html Widgets"
         copyright: "Copyright (c) 2014 Michele Bini"
         license: "GPL3"
@@ -287,6 +289,16 @@ window.coffeecharnia =
       eventHome: null
       cssPrefix: ""
       element: null
+      make: (withHtmlcup, options)@>
+        throw "virtual method"
+        # Example of how to invoke this:
+        # element = (htmlGizmo = __proto__: htmlGizmo).make ((x)-> @element = htmlcup.captureFirstTag x), { controller: charnia, text }
+        cssClass = (name)=> @cssClass name
+        homeEvent = (name)=> @homeEvent name
+        containerClass = cssClass 'container'
+        withHtmlcup ->
+            @div class:containerClass, ->
+                @button onclick:homeEvent("click"), "Hello"
     DynmodPrinter:
       pkgInfo:
         version: "DynmodPrinter 0.2.7-coffeecharnia.2"
@@ -722,13 +734,14 @@ window.coffeecharnia =
                 #
               footer.call @, style:"display:table-row"
       cssPrefix: "coffeecharnia_"
-      make: (htmlcup, { controller, text })@>
+      make: (withHtmlcup, { controller, text })@>
         cssClass = (name)=> @cssClass name
         homeEvent = (name)=> @homeEvent name
         containerClass = cssClass 'container'
-        @coffeecharniaLayout
+        i = @
+        withHtmlcup.call @, -> i.coffeecharniaLayout
           cssClass: containerClass
-          htmlcup: htmlcup
+          htmlcup: @
           style: controller.inlineStyle()
           innerStyle:
             """
@@ -812,7 +825,6 @@ window.coffeecharnia =
                   @i "A Reflective Coffescript Console/Editor!"
                 @printHtml " &bull; "
                 @a href:"https://github.com/rev22/reflective-coffeescript", "Reflective Coffeescript"
-        __proto__: @
       __proto__: HtmlGizmo
   
   global: window.eval 'window'
@@ -825,8 +837,7 @@ window.coffeecharnia =
     { document, window, DynmodPrinter, Error, camelcapBookmarklet, htmlcup, aceRefcoffeeMode } = @lib
     htmlcup = htmlcup.compileLib()
   
-    element = htmlcup.captureFirstTag -> htmlGizmo = htmlGizmo.make @, { controller: charnia, text }
-    htmlGizmo.setElement element
+    element = (htmlGizmo = __proto__: htmlGizmo).make ((x)-> @element = htmlcup.captureFirstTag x), { controller: charnia, text }
     
     document.body.appendChild element
     
