@@ -1,4 +1,4 @@
-TARGETS=coffee-script.js index.html
+TARGETS=coffee-script.js coffeecharnia.js
 
 all: $(TARGETS)
 
