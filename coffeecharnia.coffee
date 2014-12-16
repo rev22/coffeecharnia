@@ -256,7 +256,7 @@ window.coffeecharnia =
     deleteNode: (x)@> x.parentNode.removeChild(x)
     HtmlGizmo: HtmlGizmo =
       pkgInfo:
-        version: "HtmlGizmo 2.1.0"
+        version: "HtmlGizmo 2.1.1"
         description: "Reflective Html Widgets"
         copyright: "Copyright (c) 2014 Michele Bini"
         license: "GPL3"
@@ -296,12 +296,12 @@ window.coffeecharnia =
         cssClass = (name)=> @cssClass name
         homeEvent = (name)=> @homeEvent name
         containerClass = cssClass 'container'
-        withHtmlcup ->
+        withHtmlcup.call @, ->
             @div class:containerClass, ->
                 @button onclick:homeEvent("click"), "Hello"
     DynmodPrinter:
       pkgInfo:
-        version: "DynmodPrinter 0.2.7-coffeecharnia.2"
+        version: "DynmodPrinter 0.2.7-coffeecharnia.3"
         description: "Generic printer, for data and reflective code"
         copyright: "Copyright (c) 2014 Michele Bini"
         license: "MIT"
@@ -363,7 +363,7 @@ window.coffeecharnia =
                 l.push     ind + '"""'
                 l.join(ind + "\n")
               else
-                ind + '"' + x.replace(/\"/g, "\\\"") + '"'
+                ind + '"' + x.replace(/[\"\\]/g, (x)-> "\\#{x}") + '"'
             else if t is "function"
               ni = ind + "  "
               if x.coffee?
@@ -843,7 +843,7 @@ window.coffeecharnia =
     
     withAce = (cb)-> charnia.jsLoad 'ace', aceUrl, cb
     withCoffee = (cb)-> charnia.jsLoad 'CoffeeScript', coffeescriptUrl, cb
-    withAce -> withCoffee ->
+    withCoffee ->
       
       window.coffeecharnia = app =
         target: target
@@ -851,7 +851,7 @@ window.coffeecharnia =
         libs:
           CoffeeScript: window.CoffeeScript
           aceRefcoffeeMode: aceRefcoffeeMode
-          ace: window.ace
+          # ace: window.ace
         
         eval: window.eval
         setTimeout: window.setTimeout
@@ -871,85 +871,90 @@ window.coffeecharnia =
       app.setup()
     
       
-      # Some sane defaults!  However, this code does not seem to effect any change
-      ###
-      false then ace?.options =
-          mode:             "coffee"
-          theme:            "cobalt"
-          gutter:           "true"
-          # fontSize:         "10px"
-          # softWrap:         "off"
-          # keybindings:      "ace"
-          # showPrintMargin:  "true"
-          # useSoftTabs:      "true"
-          # showInvisibles:   "false"
-      ###
-      inject = (options, callback) ->
-        baseUrl = options.baseUrl or "../../src-noconflict"
-        load = (path, callback) ->
-          head = document.getElementsByTagName("head")[0]
-          s = document.createElement("script")
-          s.src = baseUrl + "/" + path
-          head.appendChild s
-          s.onload = s.onreadystatechange = (_, isAbort) ->
-            if isAbort or not s.readyState or s.readyState is "loaded" or s.readyState is "complete"
-              s = s.onload = s.onreadystatechange = null
-              callback()  unless isAbort
-            return
-    
-          return
-    
-        if window.ace?
-          
-          # load("ace.js", function() {
-          window.ace.config.loadModule "ace/ext/textarea", ->
-            if false
-              event = window.ace.require("ace/lib/event")
-              areas = document.getElementsByTagName("textarea")
-              i = 0
-    
-              while i < areas.length
-                event.addListener areas[i], "click", (e) ->
-                  window.ace.transformTextarea e.target, options.ace  if e.detail is 3
-                  return
-    
-                i++
-            callback and callback()
-            return
-    
-        return
-    
-      # });
-    
-      window.ace? then camelcapBookmarklet.setup(window.ace)
-    
-      # Call the inject function to load the ace files.
-      inject {}, do (ace = window.ace)-> ->
+      withAce ->
+        ace = window.ace
+
+        app.libs.ace = ace
         
-        # Transform the textarea on the page into an ace editor.
-        for a in [ app.view.coffeeArea ] # (x for x in document.getElementsByClassName("editArea")).reverse()
-          do (a, e = ace.require("ace/ext/textarea").transformTextarea(a))->
-            e = ace.require("ace/ext/textarea").transformTextarea(a)
-            e.navigateFileEnd()
-            a.setupTransform(e)
-            a.onchange = ->
-              # alert "a onchange " + x
-              e.setValue @value, -1
+        # Some sane defaults!  However, this code does not seem to effect any change
+        ###
+        false then ace?.options =
+            mode:             "coffee"
+            theme:            "cobalt"
+            gutter:           "true"
+            # fontSize:         "10px"
+            # softWrap:         "off"
+            # keybindings:      "ace"
+            # showPrintMargin:  "true"
+            # useSoftTabs:      "true"
+            # showInvisibles:   "false"
+        ###
+        inject = (options, callback) ->
+          baseUrl = options.baseUrl or "../../src-noconflict"
+          load = (path, callback) ->
+            head = document.getElementsByTagName("head")[0]
+            s = document.createElement("script")
+            s.src = baseUrl + "/" + path
+            head.appendChild s
+            s.onload = s.onreadystatechange = (_, isAbort) ->
+              if isAbort or not s.readyState or s.readyState is "loaded" or s.readyState is "complete"
+                s = s.onload = s.onreadystatechange = null
+                callback()  unless isAbort
               return
-    
-            e.on "change", ->
-              # alert "e change " + x
-              a.value = e.getValue()
-              a.oninput?()
+      
+            return
+      
+          if window.ace?
+            
+            # load("ace.js", function() {
+            window.ace.config.loadModule "ace/ext/textarea", ->
+              if false
+                event = window.ace.require("ace/lib/event")
+                areas = document.getElementsByTagName("textarea")
+                i = 0
+      
+                while i < areas.length
+                  event.addListener areas[i], "click", (e) ->
+                    window.ace.transformTextarea e.target, options.ace  if e.detail is 3
+                    return
+      
+                  i++
+              callback and callback()
               return
-    
-            e.on "blur", ->
-              # alert "e blur " + x
-              a.value = e.getValue()
-              a.onblur?()
-              return
-    
-            e.on "focus", ->
-              a.onfocus?()
-              return
-        return
+      
+          return
+      
+        # });
+      
+        window.ace? then camelcapBookmarklet.setup(window.ace)
+      
+        # Call the inject function to load the ace files.
+        inject {}, do (ace = window.ace)-> ->
+          
+          # Transform the textarea on the page into an ace editor.
+          for a in [ app.view.coffeeArea ] # (x for x in document.getElementsByClassName("editArea")).reverse()
+            do (a, e = ace.require("ace/ext/textarea").transformTextarea(a))->
+              e = ace.require("ace/ext/textarea").transformTextarea(a)
+              e.navigateFileEnd()
+              a.setupTransform(e)
+              a.onchange = ->
+                # alert "a onchange " + x
+                e.setValue @value, -1
+                return
+      
+              e.on "change", ->
+                # alert "e change " + x
+                a.value = e.getValue()
+                a.oninput?()
+                return
+      
+              e.on "blur", ->
+                # alert "e blur " + x
+                a.value = e.getValue()
+                a.onblur?()
+                return
+      
+              e.on "focus", ->
+                a.onfocus?()
+                return
+          return

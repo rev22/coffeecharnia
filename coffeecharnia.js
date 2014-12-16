@@ -494,7 +494,7 @@ window.coffeecharnia = {
     }),
     HtmlGizmo: HtmlGizmo = {
       pkgInfo: {
-        version: "HtmlGizmo 2.1.0",
+        version: "HtmlGizmo 2.1.1",
         description: "Reflective Html Widgets",
         copyright: "Copyright (c) 2014 Michele Bini",
         license: "GPL3"
@@ -536,7 +536,7 @@ window.coffeecharnia = {
       cssPrefix: "",
       element: null,
       make: (function(x) {
-        x.coffee = "(withHtmlcup, options)@>\n        throw \"virtual method\"\n        # Example of how to invoke this:\n        # element = (htmlGizmo = __proto__: htmlGizmo).make ((x)-> @element = htmlcup.captureFirstTag x), { controller: charnia, text }\n        cssClass = (name)=> @cssClass name\n        homeEvent = (name)=> @homeEvent name\n        containerClass = cssClass 'container'\n        withHtmlcup ->\n            @div class:containerClass, ->\n                @button onclick:homeEvent(\"click\"), \"Hello\"";
+        x.coffee = "(withHtmlcup, options)@>\n        throw \"virtual method\"\n        # Example of how to invoke this:\n        # element = (htmlGizmo = __proto__: htmlGizmo).make ((x)-> @element = htmlcup.captureFirstTag x), { controller: charnia, text }\n        cssClass = (name)=> @cssClass name\n        homeEvent = (name)=> @homeEvent name\n        containerClass = cssClass 'container'\n        withHtmlcup.call @, ->\n            @div class:containerClass, ->\n                @button onclick:homeEvent(\"click\"), \"Hello\"";
         return x;
       })(function(withHtmlcup, options) {
         var containerClass, cssClass, homeEvent;
@@ -552,7 +552,7 @@ window.coffeecharnia = {
           };
         })(this);
         containerClass = cssClass('container');
-        return withHtmlcup(function() {
+        return withHtmlcup.call(this, function() {
           return this.div({
             "class": containerClass
           }, function() {
@@ -565,7 +565,7 @@ window.coffeecharnia = {
     },
     DynmodPrinter: {
       pkgInfo: {
-        version: "DynmodPrinter 0.2.7-coffeecharnia.2",
+        version: "DynmodPrinter 0.2.7-coffeecharnia.3",
         description: "Generic printer, for data and reflective code",
         copyright: "Copyright (c) 2014 Michele Bini",
         license: "MIT"
@@ -629,7 +629,7 @@ window.coffeecharnia = {
         };
       }),
       print: (function(x) {
-        x.coffee = "(x, prev, depth = 0, ind = \"\")@>\n          p = arguments.callee\n          depth = depth + 1\n          print = (y)=> p.call @, y, { prev, x }, depth\n          clean = (x)->\n            if /^[(]([(@][^\\n]*)[)]$/.test x\n              x.substring(1, x.length - 1)\n            else\n              x\n          if x == null\n            ind + \"null\"\n          else if x == @global\n            ind + @globalName\n          else if x == undefined\n            ind + \"undefined\"\n          else\n            t = typeof x\n            if t is \"boolean\"\n              ind + if x then \"true\" else \"false\"\n            else if t is \"number\"\n              ind + @printNumber x\n            else if t is \"string\"\n              if x.length > 8 and /\\n/.test x\n                l = x.split(\"\\n\")\n                l = (x.replace /\\\"\\\"\\\"/g, '\\\"\\\"\\\"' for x in l)\n                l.unshift ind + '\"\"\"'\n                l.push     ind + '\"\"\"'\n                l.join(ind + \"\\n\")\n              else\n                ind + '\"' + x.replace(/\\\"/g, \"\\\\\\\"\") + '\"'\n            else if t is \"function\"\n              ni = ind + \"  \"\n              if x.coffee?\n                # YAY a reflective function!!!\n                s = x.coffee\n                if depth is 1 or /\\n/.test s\n                  lines = s.split \"\\n\"\n                  if lines.length > 1\n                    if (mn = lines[1].match(/^[ \\t]+/))?\n                      mn = mn[0].length\n                      id = mn - ni.length\n                      if id > 0\n                        x = new @RegExp(\"[ \\\\t]{#{id}}\")\n                        lines = (line.replace x, \"\" for line in lines)\n                      else if id < 0\n                        ni = @Array(-id + 1).join(\" \")\n                        lines = (ni + line for line in lines)                \n                  lines.join(\"\\n\")\n                else\n                  ind + \"(\" + s + \")\"\n              else\n                ind + x.toString().replace(/\\n/g, '\\n' + ni)\n            else if (c = (do (p = prev, c = 1)-> (return c if p.x == x; p = p.prev; c++) while p?; 0))\n              # Report cyclic structures\n              \"<cycle-#{c}+#{depth - c - 1}>\"\n            else if t isnt \"object\"\n              # print object of odd type\n              \"<#{t}>\"\n            else if @Array.isArray x\n              if x.length is 0\n                \"[ ]\"\n              else\n                cl = 2\n                hasLines = false\n                xxxx = for xx in x\n                  break unless @newline()\n                  xx = print xx\n                  hasLines = true if /\\n/.test xx\n                  cl += 2 + xx.length\n                  xx\n                if not hasLines and depth * 2 + cl + 1 < @columns\n                  \"[ \" + xxxx.join(\", \") + \" ]\"\n                else\n                  ni = ind + \"  \"\n                  l = [ ind + \"[\" ]\n                  for xx in xxxx\n                    l.push ni + clean(xx).replace(/\\n/g, '\\n' + ni)\n                  l.push ind + \"]\"\n                  l.join \"\\n\"\n            else\n              l = [ ]\n              @window?.document?   and   x.id?   and   typeof x.id is \"string\"   and   x is @window.document.getElementById x.id   then\n                return \"#{ind}window.document.getElementById '#{ x.id.replace(/\\'/, \"\\\\'\") }'\"\n              @symbolicPackages and depth > 1 and (packageVersion = x.pkgInfo?.version)? then\n                return ind + \"dynmodArchive.load '\" + packageVersion.replace(/\\ .*/, \"\") + \"'\"\n              ind = \"\"\n              if x instanceof @Date\n                return \"new Date(\\\"#{x.toISOString()}\\\")\"\n              keys = (k for k of x)\n              if keys.length is 0\n                return \"{ }\"\n              unless (!prev? or typeof prev.x is \"object\" and !@Array.isArray prev.x)\n                l = [ \"do->\" ]\n                ind = \"  \"\n              ni = ind + \"  \"\n              # keys = (h)@> (x for x of h).sort()\n              kvFilter = @filter ? (-> true)\n              for k in keys\n                break unless @newline()\n                v = x[k]\n                if !kvFilter(k,v)\n                  l.push \"#{ind}# #{k}: <#{typeof v}>\"\n                else if @global[k] is v\n                  # l.push ind + k + \": eval \" + \"'\" + k + \"'\"\n                  l.push \"#{ind}#{k}: #{@globalName}.#{k}\"\n                else\n                  v = clean(print v).replace(/\\n/g, '\\n' + ni)\n                  if !/\\n/.test(v) and  ind.length + k.toString().length + 2 + v.length < @columns\n                    l.push ind + k + \": \" + v\n                  else\n                    l.push ind + k + \":\"\n                    l.push ni + v\n              if l.length\n                l.join \"\\n\"\n              else\n                \"{ }\"";
+        x.coffee = "(x, prev, depth = 0, ind = \"\")@>\n          p = arguments.callee\n          depth = depth + 1\n          print = (y)=> p.call @, y, { prev, x }, depth\n          clean = (x)->\n            if /^[(]([(@][^\\n]*)[)]$/.test x\n              x.substring(1, x.length - 1)\n            else\n              x\n          if x == null\n            ind + \"null\"\n          else if x == @global\n            ind + @globalName\n          else if x == undefined\n            ind + \"undefined\"\n          else\n            t = typeof x\n            if t is \"boolean\"\n              ind + if x then \"true\" else \"false\"\n            else if t is \"number\"\n              ind + @printNumber x\n            else if t is \"string\"\n              if x.length > 8 and /\\n/.test x\n                l = x.split(\"\\n\")\n                l = (x.replace /\\\"\\\"\\\"/g, '\\\"\\\"\\\"' for x in l)\n                l.unshift ind + '\"\"\"'\n                l.push     ind + '\"\"\"'\n                l.join(ind + \"\\n\")\n              else\n                ind + '\"' + x.replace(/[\\\"\\\\]/g, (x)-> \"\\\\#{x}\") + '\"'\n            else if t is \"function\"\n              ni = ind + \"  \"\n              if x.coffee?\n                # YAY a reflective function!!!\n                s = x.coffee\n                if depth is 1 or /\\n/.test s\n                  lines = s.split \"\\n\"\n                  if lines.length > 1\n                    if (mn = lines[1].match(/^[ \\t]+/))?\n                      mn = mn[0].length\n                      id = mn - ni.length\n                      if id > 0\n                        x = new @RegExp(\"[ \\\\t]{#{id}}\")\n                        lines = (line.replace x, \"\" for line in lines)\n                      else if id < 0\n                        ni = @Array(-id + 1).join(\" \")\n                        lines = (ni + line for line in lines)                \n                  lines.join(\"\\n\")\n                else\n                  ind + \"(\" + s + \")\"\n              else\n                ind + x.toString().replace(/\\n/g, '\\n' + ni)\n            else if (c = (do (p = prev, c = 1)-> (return c if p.x == x; p = p.prev; c++) while p?; 0))\n              # Report cyclic structures\n              \"<cycle-#{c}+#{depth - c - 1}>\"\n            else if t isnt \"object\"\n              # print object of odd type\n              \"<#{t}>\"\n            else if @Array.isArray x\n              if x.length is 0\n                \"[ ]\"\n              else\n                cl = 2\n                hasLines = false\n                xxxx = for xx in x\n                  break unless @newline()\n                  xx = print xx\n                  hasLines = true if /\\n/.test xx\n                  cl += 2 + xx.length\n                  xx\n                if not hasLines and depth * 2 + cl + 1 < @columns\n                  \"[ \" + xxxx.join(\", \") + \" ]\"\n                else\n                  ni = ind + \"  \"\n                  l = [ ind + \"[\" ]\n                  for xx in xxxx\n                    l.push ni + clean(xx).replace(/\\n/g, '\\n' + ni)\n                  l.push ind + \"]\"\n                  l.join \"\\n\"\n            else\n              l = [ ]\n              @window?.document?   and   x.id?   and   typeof x.id is \"string\"   and   x is @window.document.getElementById x.id   then\n                return \"#{ind}window.document.getElementById '#{ x.id.replace(/\\'/, \"\\\\'\") }'\"\n              @symbolicPackages and depth > 1 and (packageVersion = x.pkgInfo?.version)? then\n                return ind + \"dynmodArchive.load '\" + packageVersion.replace(/\\ .*/, \"\") + \"'\"\n              ind = \"\"\n              if x instanceof @Date\n                return \"new Date(\\\"#{x.toISOString()}\\\")\"\n              keys = (k for k of x)\n              if keys.length is 0\n                return \"{ }\"\n              unless (!prev? or typeof prev.x is \"object\" and !@Array.isArray prev.x)\n                l = [ \"do->\" ]\n                ind = \"  \"\n              ni = ind + \"  \"\n              # keys = (h)@> (x for x of h).sort()\n              kvFilter = @filter ? (-> true)\n              for k in keys\n                break unless @newline()\n                v = x[k]\n                if !kvFilter(k,v)\n                  l.push \"#{ind}# #{k}: <#{typeof v}>\"\n                else if @global[k] is v\n                  # l.push ind + k + \": eval \" + \"'\" + k + \"'\"\n                  l.push \"#{ind}#{k}: #{@globalName}.#{k}\"\n                else\n                  v = clean(print v).replace(/\\n/g, '\\n' + ni)\n                  if !/\\n/.test(v) and  ind.length + k.toString().length + 2 + v.length < @columns\n                    l.push ind + k + \": \" + v\n                  else\n                    l.push ind + k + \":\"\n                    l.push ni + v\n              if l.length\n                l.join \"\\n\"\n              else\n                \"{ }\"";
         return x;
       })(function(x, prev, depth, ind) {
         var c, cl, clean, hasLines, id, k, keys, kvFilter, l, line, lines, mn, ni, p, packageVersion, print, s, t, v, xx, xxxx, _i, _j, _len, _len1, _ref, _ref1, _ref2;
@@ -684,7 +684,9 @@ window.coffeecharnia = {
               l.push(ind + '"""');
               return l.join(ind + "\n");
             } else {
-              return ind + '"' + x.replace(/\"/g, "\\\"") + '"';
+              return ind + '"' + x.replace(/[\"\\]/g, function(x) {
+                return "\\" + x;
+              }) + '"';
             }
           } else if (t === "function") {
             ni = ind + "  ";
@@ -1459,7 +1461,7 @@ window.coffeecharnia = {
   global: window["eval"]('window'),
   window: window,
   spawn: (function(x) {
-    x.coffee = "(opts)@>\n    { target, text } = opts if opts?\n    charnia = (@view then @__proto__ else @)\n    { coffeescriptUrl } = @config\n    { aceUrl, htmlGizmo } = @\n    { document, window, DynmodPrinter, Error, camelcapBookmarklet, htmlcup, aceRefcoffeeMode } = @lib\n    htmlcup = htmlcup.compileLib()\n  \n    element = (htmlGizmo = __proto__: htmlGizmo).make ((x)-> @element = htmlcup.captureFirstTag x), { controller: charnia, text }\n    \n    document.body.appendChild element\n    \n    withAce = (cb)-> charnia.jsLoad 'ace', aceUrl, cb\n    withCoffee = (cb)-> charnia.jsLoad 'CoffeeScript', coffeescriptUrl, cb\n    withAce -> withCoffee ->\n      \n      window.coffeecharnia = app =\n        target: target\n      \n        libs:\n          CoffeeScript: window.CoffeeScript\n          aceRefcoffeeMode: aceRefcoffeeMode\n          ace: window.ace\n        \n        eval: window.eval\n        setTimeout: window.setTimeout\n        getInputSelection: window.getInputSelection\n    \n        view: ((x)-> r = {}; r[v] = htmlGizmo.getElement(v) for v in x.split(\",\"); r.coffeecharniaConsole = element; r ) \"coffeeArea,runButton,enlargeButton,dragButton,shrinkButton,killButton,introFooter,resultFooter,resultDatum\"\n                 \n        # ace: ace ? null\n        # setupAce: @> @ace.edit(@view.coffeeArea)\n    \n        Error: Error\n    \n        files: { }\n    \n        __proto__: charnia\n    \n      app.setup()\n    \n      \n      # Some sane defaults!  However, this code does not seem to effect any change\n      ###\n      false then ace?.options =\n          mode:             \"coffee\"\n          theme:            \"cobalt\"\n          gutter:           \"true\"\n          # fontSize:         \"10px\"\n          # softWrap:         \"off\"\n          # keybindings:      \"ace\"\n          # showPrintMargin:  \"true\"\n          # useSoftTabs:      \"true\"\n          # showInvisibles:   \"false\"\n      ###\n      inject = (options, callback) ->\n        baseUrl = options.baseUrl or \"../../src-noconflict\"\n        load = (path, callback) ->\n          head = document.getElementsByTagName(\"head\")[0]\n          s = document.createElement(\"script\")\n          s.src = baseUrl + \"/\" + path\n          head.appendChild s\n          s.onload = s.onreadystatechange = (_, isAbort) ->\n            if isAbort or not s.readyState or s.readyState is \"loaded\" or s.readyState is \"complete\"\n              s = s.onload = s.onreadystatechange = null\n              callback()  unless isAbort\n            return\n    \n          return\n    \n        if window.ace?\n          \n          # load(\"ace.js\", function() {\n          window.ace.config.loadModule \"ace/ext/textarea\", ->\n            if false\n              event = window.ace.require(\"ace/lib/event\")\n              areas = document.getElementsByTagName(\"textarea\")\n              i = 0\n    \n              while i < areas.length\n                event.addListener areas[i], \"click\", (e) ->\n                  window.ace.transformTextarea e.target, options.ace  if e.detail is 3\n                  return\n    \n                i++\n            callback and callback()\n            return\n    \n        return\n    \n      # });\n    \n      window.ace? then camelcapBookmarklet.setup(window.ace)\n    \n      # Call the inject function to load the ace files.\n      inject {}, do (ace = window.ace)-> ->\n        \n        # Transform the textarea on the page into an ace editor.\n        for a in [ app.view.coffeeArea ] # (x for x in document.getElementsByClassName(\"editArea\")).reverse()\n          do (a, e = ace.require(\"ace/ext/textarea\").transformTextarea(a))->\n            e = ace.require(\"ace/ext/textarea\").transformTextarea(a)\n            e.navigateFileEnd()\n            a.setupTransform(e)\n            a.onchange = ->\n              # alert \"a onchange \" + x\n              e.setValue @value, -1\n              return\n    \n            e.on \"change\", ->\n              # alert \"e change \" + x\n              a.value = e.getValue()\n              a.oninput?()\n              return\n    \n            e.on \"blur\", ->\n              # alert \"e blur \" + x\n              a.value = e.getValue()\n              a.onblur?()\n              return\n    \n            e.on \"focus\", ->\n              a.onfocus?()\n              return\n        return";
+    x.coffee = "(opts)@>\n    { target, text } = opts if opts?\n    charnia = (@view then @__proto__ else @)\n    { coffeescriptUrl } = @config\n    { aceUrl, htmlGizmo } = @\n    { document, window, DynmodPrinter, Error, camelcapBookmarklet, htmlcup, aceRefcoffeeMode } = @lib\n    htmlcup = htmlcup.compileLib()\n  \n    element = (htmlGizmo = __proto__: htmlGizmo).make ((x)-> @element = htmlcup.captureFirstTag x), { controller: charnia, text }\n    \n    document.body.appendChild element\n    \n    withAce = (cb)-> charnia.jsLoad 'ace', aceUrl, cb\n    withCoffee = (cb)-> charnia.jsLoad 'CoffeeScript', coffeescriptUrl, cb\n    withCoffee ->\n      \n      window.coffeecharnia = app =\n        target: target\n      \n        libs:\n          CoffeeScript: window.CoffeeScript\n          aceRefcoffeeMode: aceRefcoffeeMode\n          # ace: window.ace\n        \n        eval: window.eval\n        setTimeout: window.setTimeout\n        getInputSelection: window.getInputSelection\n    \n        view: ((x)-> r = {}; r[v] = htmlGizmo.getElement(v) for v in x.split(\",\"); r.coffeecharniaConsole = element; r ) \"coffeeArea,runButton,enlargeButton,dragButton,shrinkButton,killButton,introFooter,resultFooter,resultDatum\"\n                 \n        # ace: ace ? null\n        # setupAce: @> @ace.edit(@view.coffeeArea)\n    \n        Error: Error\n    \n        files: { }\n    \n        __proto__: charnia\n    \n      app.setup()\n    \n      \n      withAce ->\n        ace = window.ace\n\n        app.libs.ace = ace\n        \n        # Some sane defaults!  However, this code does not seem to effect any change\n        ###\n        false then ace?.options =\n            mode:             \"coffee\"\n            theme:            \"cobalt\"\n            gutter:           \"true\"\n            # fontSize:         \"10px\"\n            # softWrap:         \"off\"\n            # keybindings:      \"ace\"\n            # showPrintMargin:  \"true\"\n            # useSoftTabs:      \"true\"\n            # showInvisibles:   \"false\"\n        ###\n        inject = (options, callback) ->\n          baseUrl = options.baseUrl or \"../../src-noconflict\"\n          load = (path, callback) ->\n            head = document.getElementsByTagName(\"head\")[0]\n            s = document.createElement(\"script\")\n            s.src = baseUrl + \"/\" + path\n            head.appendChild s\n            s.onload = s.onreadystatechange = (_, isAbort) ->\n              if isAbort or not s.readyState or s.readyState is \"loaded\" or s.readyState is \"complete\"\n                s = s.onload = s.onreadystatechange = null\n                callback()  unless isAbort\n              return\n      \n            return\n      \n          if window.ace?\n            \n            # load(\"ace.js\", function() {\n            window.ace.config.loadModule \"ace/ext/textarea\", ->\n              if false\n                event = window.ace.require(\"ace/lib/event\")\n                areas = document.getElementsByTagName(\"textarea\")\n                i = 0\n      \n                while i < areas.length\n                  event.addListener areas[i], \"click\", (e) ->\n                    window.ace.transformTextarea e.target, options.ace  if e.detail is 3\n                    return\n      \n                  i++\n              callback and callback()\n              return\n      \n          return\n      \n        # });\n      \n        window.ace? then camelcapBookmarklet.setup(window.ace)\n      \n        # Call the inject function to load the ace files.\n        inject {}, do (ace = window.ace)-> ->\n          \n          # Transform the textarea on the page into an ace editor.\n          for a in [ app.view.coffeeArea ] # (x for x in document.getElementsByClassName(\"editArea\")).reverse()\n            do (a, e = ace.require(\"ace/ext/textarea\").transformTextarea(a))->\n              e = ace.require(\"ace/ext/textarea\").transformTextarea(a)\n              e.navigateFileEnd()\n              a.setupTransform(e)\n              a.onchange = ->\n                # alert \"a onchange \" + x\n                e.setValue @value, -1\n                return\n      \n              e.on \"change\", ->\n                # alert \"e change \" + x\n                a.value = e.getValue()\n                a.oninput?()\n                return\n      \n              e.on \"blur\", ->\n                # alert \"e blur \" + x\n                a.value = e.getValue()\n                a.onblur?()\n                return\n      \n              e.on \"focus\", ->\n                a.onfocus?()\n                return\n          return";
     return x;
   })(function(opts) {
     var DynmodPrinter, Error, aceRefcoffeeMode, aceUrl, camelcapBookmarklet, charnia, coffeescriptUrl, document, element, htmlGizmo, htmlcup, target, text, window, withAce, withCoffee, _ref;
@@ -1486,35 +1488,37 @@ window.coffeecharnia = {
     withCoffee = function(cb) {
       return charnia.jsLoad('CoffeeScript', coffeescriptUrl, cb);
     };
-    return withAce(function() {
-      return withCoffee(function() {
-        var app, inject;
-        window.coffeecharnia = app = {
-          target: target,
-          libs: {
-            CoffeeScript: window.CoffeeScript,
-            aceRefcoffeeMode: aceRefcoffeeMode,
-            ace: window.ace
-          },
-          "eval": window["eval"],
-          setTimeout: window.setTimeout,
-          getInputSelection: window.getInputSelection,
-          view: (function(x) {
-            var r, v, _i, _len, _ref1;
-            r = {};
-            _ref1 = x.split(",");
-            for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
-              v = _ref1[_i];
-              r[v] = htmlGizmo.getElement(v);
-            }
-            r.coffeecharniaConsole = element;
-            return r;
-          })("coffeeArea,runButton,enlargeButton,dragButton,shrinkButton,killButton,introFooter,resultFooter,resultDatum"),
-          Error: Error,
-          files: {},
-          __proto__: charnia
-        };
-        app.setup();
+    return withCoffee(function() {
+      var app;
+      window.coffeecharnia = app = {
+        target: target,
+        libs: {
+          CoffeeScript: window.CoffeeScript,
+          aceRefcoffeeMode: aceRefcoffeeMode
+        },
+        "eval": window["eval"],
+        setTimeout: window.setTimeout,
+        getInputSelection: window.getInputSelection,
+        view: (function(x) {
+          var r, v, _i, _len, _ref1;
+          r = {};
+          _ref1 = x.split(",");
+          for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
+            v = _ref1[_i];
+            r[v] = htmlGizmo.getElement(v);
+          }
+          r.coffeecharniaConsole = element;
+          return r;
+        })("coffeeArea,runButton,enlargeButton,dragButton,shrinkButton,killButton,introFooter,resultFooter,resultDatum"),
+        Error: Error,
+        files: {},
+        __proto__: charnia
+      };
+      app.setup();
+      return withAce(function() {
+        var ace, inject;
+        ace = window.ace;
+        app.libs.ace = ace;
 
         /*
         false then ace?.options =

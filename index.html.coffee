@@ -15,7 +15,7 @@
 { htmlcup } = require 'htmlcup'
 
 fs = require 'fs'
-datauri = (t,x)-> "data:#{t};base64,#{new Buffer(fs.readFileSync(x)).toString("
+datauri = (t,x)-> "data:#{t};base64,#{new Buffer(fs.readFileSync(x)).toString()}"
 datauriicon = (x)-> datauri "image/x-icon", x
 
 htmlcup.html lang:"en", manifest:"coffeecharnia.appcache", style:"height:100%", ->

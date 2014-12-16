@@ -37,3 +37,9 @@ clean:
 
 coffee-script.js: ../reflective-coffeescript/extras/coffee-script.js
 	cp -av $< $@
+
+rebuildCoffeecharnia: coffeecharnia.js
+	touch index.html.coffee
+	echo >rebuildCoffeecharnia
+
+all: rebuildCoffeecharnia index.html
