@@ -6,7 +6,7 @@ window.coffeecharnia =
     description: "Reflective CoffeeScript Console"
     copyright: "Copyright (c) 2014 Michele Bini"
     license: "GPL3"
-  
+
   edit: (target, options)@>
     { filter } = options if options?
     # Edit only reflective methods and constants by default
@@ -830,7 +830,7 @@ window.coffeecharnia =
   global: window.eval 'window'
   window: window
   spawn: (opts)@>
-    { target, text } = opts if opts?
+    { target, text, cb } = opts if opts?
     charnia = (@view then @__proto__ else @)
     { coffeescriptUrl } = @config
     { aceUrl, htmlGizmo } = @
@@ -845,7 +845,7 @@ window.coffeecharnia =
     withCoffee = (cb)-> charnia.jsLoad 'CoffeeScript', coffeescriptUrl, cb
     withCoffee ->
       
-      window.coffeecharnia = app =
+      app =
         target: target
       
         libs:
@@ -870,7 +870,6 @@ window.coffeecharnia =
     
       app.setup()
     
-      
       withAce ->
         ace = window.ace
 
@@ -958,3 +957,5 @@ window.coffeecharnia =
                 a.onfocus?()
                 return
           return
+
+      cb?(app)

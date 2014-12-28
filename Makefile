@@ -43,3 +43,10 @@ rebuildCoffeecharnia: coffeecharnia.js
 	echo >rebuildCoffeecharnia
 
 all: rebuildCoffeecharnia index.html
+
+swipeboard.js: ../swipeboard/swipeboard.js
+	cp -av $< $@
+
+SwipeBoard.html: SwipeBoard.html.coffee swipeboard.js coffee-script.js coffeecharnia.js
+	(sh -c "coffee $< >$@.new" && mv $@.new $@ && touch -r $< $@) || rm -f $@
+	echo >>coffeecharnia.appcache
