@@ -3,22 +3,17 @@ var HtmlGizmo;
 
 window.coffeecharnia = {
   config: {
-    coffeescriptUrl: "coffee-script.js"
+    coffeescriptUrl: "coffee-script.js",
+    codeLogUrl: "http://localhost/cgi-bin/coffeecharnialog"
   },
   pkgInfo: {
-    version: "CoffeeCharnia 0.3.49",
+    version: "CoffeeCharnia 0.3.50",
     description: "Reflective CoffeeScript Console",
-    copyright: "Copyright (c) 2014 Michele Bini",
+    copyright: "Copyright (c) 2014, 2015 Michele Bini",
     license: "GPL3"
   },
-  foo: (function(x) {
-    x.coffee = "(a, b)@> 3";
-    return x;
-  })(function(a, b) {
-    return 3;
-  }),
   edit: (function(x) {
-    x.coffee = "(target, options)@>\n    { filter } = options if options?\n    # Edit only reflective methods and constants by default\n    filter ?= (k,v)-> (typeof v is 'function' and v.coffee?) or (typeof v in [ 'boolean', 'number', 'string']) or v is null\n    text = @lib.DynmodPrinter.withFilter(filter).limitLines(5000).print(target)\n    @spawn { target, text }";
+    x.coffee = "(target, options)@>\n    { filter } = options if options?\n    # Edit only reflective methods and constants by default\n    filter ?= (k,v)-> (typeof v is 'function' and v.coffee?) or (typeof v in [ 'boolean', 'number', 'string']) or v is null\n    text = @lib.DynmodPrinter.withFilter(filter).limitLines(5000).print(target)\n    @spawn { target, text }\n\n  ";
     return x;
   })(function(target, options) {
     var filter, text;
@@ -38,7 +33,7 @@ window.coffeecharnia = {
     });
   }),
   exit: (function(x) {
-    x.coffee = "@>\n      el = @getElement()\n      el.parentNode.removeChild el";
+    x.coffee = "@>\n      el = @getElement()\n      el.parentNode.removeChild el\n\n  ";
     return x;
   })(function() {
     var el;
@@ -56,7 +51,7 @@ window.coffeecharnia = {
     }
   }),
   inlineStyle: (function(x) {
-    x.coffee = "@>\n     s = @sizePercentage ? 38\n     (g = @gravity)? then\n       [ x, y ] = g\n     else\n       x = y = 1\n     y = ([ (-> \"top:0\"),   (-> \"top:#{(100-s)/2}%\"),   (-> \"bottom:0\")  ])[y]()\n     x = ([ (-> \"left:0\"),  (-> \"left:#{(100-s)/2}%\"),  (-> \"right:0\")   ])[x]()\n     g = \"#{x};#{y}\"\n     \"position:absolute;overflow:auto;width:#{s}%;height:#{s}%;#{g};background:black;color:#ddd;text-align:initial;font-size:12px\"";
+    x.coffee = "@>\n     s = @sizePercentage ? 38\n     (g = @gravity)? then\n       [ x, y ] = g\n     else\n       x = y = 1\n     y = ([ (-> \"top:0\"),   (-> \"top:#{(100-s)/2}%\"),   (-> \"bottom:0\")  ])[y]()\n     x = ([ (-> \"left:0\"),  (-> \"left:#{(100-s)/2}%\"),  (-> \"right:0\")   ])[x]()\n     g = \"#{x};#{y}\"\n     \"position:absolute;overflow:auto;width:#{s}%;height:#{s}%;#{g};background:black;color:#ddd;text-align:initial;font-size:12px\"\n   \n  ";
     return x;
   })(function() {
     var g, s, x, y, _ref;
@@ -101,11 +96,160 @@ window.coffeecharnia = {
   })(function(s) {
     return "->" + ("\n" + s).replace(/\n/g, "\n  ");
   }),
-  evalCoffeescript: (function(x) {
-    x.coffee = "(x)@>\n      { target } = @\n      if target is @global\n        js = @libs.CoffeeScript.compile(@processSource(x), bare:true)\n        @eval js\n      else\n        js = @libs.CoffeeScript.compile(@processSourceIntoFunction(@processSource(x)), bare:true)\n        @eval(\"#{js}\").call(target ? @)";
+  codelogger: {
+    connection: null,
+    queue: [],
+    backoff: 100,
+    backoff_threshold: 400,
+    setTimeout: setTimeout,
+    clearTimeout: clearTimeout,
+    XMLHttpRequest: XMLHttpRequest,
+    getPostUrl: (function(x) {
+      x.coffee = "@> @charnia.config.codeLogUrl";
+      return x;
+    })(function() {
+      return this.charnia.config.codeLogUrl;
+    }),
+    log: (function(x) {
+      x.coffee = "(x)@>\n      @queue.push x\n      if @connection?\n        if @backoff > @backoff_threshold\n          @abort()\n        else\n          return\n      @ .> slowSaving then\n        setTimeout <. @\n        s = \n        @slowSavingTimeout = setTimeout(\n          =>\n            @slowSavingTimeout = null\n            slowSaving()\n          @slowSavingMs ? 3000\n        )\n      @runQueue()\n\n    ";
+      return x;
+    })(function(x) {
+      var s, setTimeout, slowSaving, _ref;
+      this.queue.push(x);
+      if (this.connection != null) {
+        if (this.backoff > this.backoff_threshold) {
+          this.abort();
+        } else {
+          return;
+        }
+      }
+      if (slowSaving = this.slowSaving) {
+        setTimeout = this.setTimeout;
+        s = this.slowSavingTimeout = setTimeout((function(_this) {
+          return function() {
+            _this.slowSavingTimeout = null;
+            return slowSaving();
+          };
+        })(this), (_ref = this.slowSavingMs) != null ? _ref : 3000);
+      }
+      return this.runQueue();
+    }),
+    runQueue: (function(x) {
+      x.coffee = "@>\n      # console <. @\n      # console.log \"running queue\"\n      @post\n        url: @getPostUrl()\n        \n        data: @queue[0]\n        \n        done: (status, response)=>\n          # console.log \"done #{status}\"\n          status = \"#{status}\"\n          queue <. @\n          again = 1\n          if status[0] is \"2\"\n            # console.log \"done ok\"\n            queue.shift()\n            @backoff = 100\n            unless queue.length\n              again = 0\n              @connection = null\n              slowSavingTimeout <. @ then\n                clearTimeout <. @\n                clearTimeout slowSavingTimeout\n              else\n                @slowSavingDone?()\n          if again\n            # console.log \"again\"\n            @backoff *= 1.5\n            setTimeout <. @\n            setTimeout (=> @runQueue()), @backoff\n\n        timeout: =>\n          # console.log \"timeout\"\n          @backoff *= 1.5\n          setTimeout <. @\n          setTimeout (=> @runQueue()), @backoff\n\n    ";
+      return x;
+    })(function() {
+      return this.post({
+        url: this.getPostUrl(),
+        data: this.queue[0],
+        done: (function(_this) {
+          return function(status, response) {
+            var again, clearTimeout, queue, setTimeout, slowSavingTimeout;
+            status = "" + status;
+            queue = _this.queue;
+            again = 1;
+            if (status[0] === "2") {
+              queue.shift();
+              _this.backoff = 100;
+              if (!queue.length) {
+                again = 0;
+                _this.connection = null;
+                if (slowSavingTimeout = _this.slowSavingTimeout) {
+                  clearTimeout = _this.clearTimeout;
+                  clearTimeout(slowSavingTimeout);
+                } else {
+                  if (typeof _this.slowSavingDone === "function") {
+                    _this.slowSavingDone();
+                  }
+                }
+              }
+            }
+            if (again) {
+              _this.backoff *= 1.5;
+              setTimeout = _this.setTimeout;
+              return setTimeout((function() {
+                return _this.runQueue();
+              }), _this.backoff);
+            }
+          };
+        })(this),
+        timeout: (function(_this) {
+          return function() {
+            var setTimeout;
+            _this.backoff *= 1.5;
+            setTimeout = _this.setTimeout;
+            return setTimeout((function() {
+              return _this.runQueue();
+            }), _this.backoff);
+          };
+        })(this)
+      });
+    }),
+    post: (function(x) {
+      x.coffee = "({ url, data, done, timeout })@>\n      # console <. @\n      r = new @XMLHttpRequest\n      r.open 'POST', url, true\n      r.setRequestHeader 'Content-Type', 'text/plain; charset=UTF-8'\n      # r.responseType = \"application/json\"\n      r.send data\n      readyStateDone = r.DONE\n      r.onreadystatechange = ->\n        # console.log [ @readyState, @status, @responseText, @response ]\n        return unless @readyState is readyStateDone\n        @onreadystatechange = null\n        if !done?\n          throw \"nulllll\"\n        done(@status, @response ? @responseText)\n      r.ontimeout = timeout\n      @connection = r\n\n    ";
+      return x;
+    })(function(_arg) {
+      var data, done, r, readyStateDone, timeout, url;
+      url = _arg.url, data = _arg.data, done = _arg.done, timeout = _arg.timeout;
+      r = new this.XMLHttpRequest;
+      r.open('POST', url, true);
+      r.setRequestHeader('Content-Type', 'text/plain; charset=UTF-8');
+      r.send(data);
+      readyStateDone = r.DONE;
+      r.onreadystatechange = function() {
+        var _ref;
+        if (this.readyState !== readyStateDone) {
+          return;
+        }
+        this.onreadystatechange = null;
+        if (done == null) {
+          throw "nulllll";
+        }
+        return done(this.status, (_ref = this.response) != null ? _ref : this.responseText);
+      };
+      r.ontimeout = timeout;
+      return this.connection = r;
+    }),
+    abort: (function(x) {
+      x.coffee = "@>\n      @ .> connection then\n        connection.abort()\n        @connection = null\n                 \n  ";
+      return x;
+    })(function() {
+      var connection;
+      if (connection = this.connection) {
+        connection.abort();
+        return this.connection = null;
+      }
+    })
+  },
+  runCode: (function(x) {
+    x.coffee = "(x)@>\n      if @config.codeLogUrl?\n        @codelogger.charnia = @\n        @codelogger.slowSaving = =>\n          @view.coffeecharniaConsole.appendChild do=>\n            slowSavingMessage = @lib.document.createElement \"div\"\n            slowSavingMessage.setAttribute \"style\", \"position:absolute;top:0;right:0;font-size:200%;background:red;color:black\"\n            slowSavingMessage.innerHTML = \"Slow saving...\"\n            @view .< slowSavingMessage\n            slowSavingMessage\n        @codelogger.slowSavingDone = =>\n          @view .> slowSavingMessage then\n            @view.coffeecharniaConsole.removeChild slowSavingMessage\n            delete @view.slowSavingMessage\n        @codelogger.log x\n      { target } = @\n      if target is @global\n        js = @libs.CoffeeScript.compile(@processSource(x), bare:true)\n        @eval js\n      else\n        js = @libs.CoffeeScript.compile(@processSourceIntoFunction(@processSource(x)), bare:true)\n        @eval(\"#{js}\").call(target ? @)\n                 \n  ";
     return x;
   })(function(x) {
     var js, target;
+    if (this.config.codeLogUrl != null) {
+      this.codelogger.charnia = this;
+      this.codelogger.slowSaving = (function(_this) {
+        return function() {
+          return _this.view.coffeecharniaConsole.appendChild((function() {
+            var slowSavingMessage;
+            slowSavingMessage = _this.lib.document.createElement("div");
+            slowSavingMessage.setAttribute("style", "position:absolute;top:0;right:0;font-size:200%;background:red;color:black");
+            slowSavingMessage.innerHTML = "Slow saving...";
+            _this.view.slowSavingMessage = slowSavingMessage;
+            return slowSavingMessage;
+          })());
+        };
+      })(this);
+      this.codelogger.slowSavingDone = (function(_this) {
+        return function() {
+          var slowSavingMessage;
+          if (slowSavingMessage = _this.view.slowSavingMessage) {
+            _this.view.coffeecharniaConsole.removeChild(slowSavingMessage);
+            return delete _this.view.slowSavingMessage;
+          }
+        };
+      })(this);
+      this.codelogger.log(x);
+    }
     target = this.target;
     if (target === this.global) {
       js = this.libs.CoffeeScript.compile(this.processSource(x), {
@@ -120,7 +264,7 @@ window.coffeecharnia = {
     }
   }),
   evalWithSourceMap: (function(x) {
-    x.coffee = "(x)@>\n      # This technique does not seem to work properly on Chromium 22\n      { js, sourceMapV3, file_name } = @libs.CoffeeScript.compile x, sourceMap: 1\n      @lastSourceMap = \"\"\n      @eval(js)";
+    x.coffee = "(x)@>\n      # This technique does not seem to work properly on Chromium 22\n      { js, sourceMapV3, file_name } = @libs.CoffeeScript.compile x, sourceMap: 1\n      @lastSourceMap = \"\"\n      @eval(js)\n                 \n  ";
     return x;
   })(function(x) {
     var file_name, js, sourceMapV3, _ref;
@@ -137,13 +281,13 @@ window.coffeecharnia = {
     return "<pre>" + (x.replace(/</g, "&lt;")) + "</pre>";
   }),
   printVal: (function(x) {
-    x.coffee = "(x)@>\n      @preQuote(@lib.DynmodPrinter.limitLines(1000).print(x))\n      # x.toString()";
+    x.coffee = "(x)@>\n      @preQuote(@lib.DynmodPrinter.limitLines(1000).print(x))\n      # x.toString()\n                 \n  ";
     return x;
   })(function(x) {
     return this.preQuote(this.lib.DynmodPrinter.limitLines(1000).print(x));
   }),
   recalculateTextareaSize: (function(x) {
-    x.coffee = "@>\n      { setTimeout } = @\n      setTimeout (=>\n        editor = @view.coffeeArea.transformed\n        editor.resize()\n        editor.renderer.scrollCursorIntoView()\n      ), 0";
+    x.coffee = "@>\n      { setTimeout } = @\n      setTimeout (=>\n        editor = @view.coffeeArea.transformed\n        editor.resize()\n        editor.renderer.scrollCursorIntoView()\n      ), 0\n    \n  ";
     return x;
   })(function() {
     var setTimeout;
@@ -158,7 +302,7 @@ window.coffeecharnia = {
     })(this)), 0);
   }),
   runButtonClick: (function(x) {
-    x.coffee = "@>\n      x = @view.coffeeArea.value\n      isError = null\n      val = if true\n        @evalCoffeescript x catch error\n          isError = true\n          val = error.stack ? error?.toString() ? error ? \"Undefined error\"\n      else\n        @evalWithSourceMap x\n      { coffeecharniaConsole: console, introFooter, resultFooter, resultDatum } = @view\n      if val?\n        introFooter.setAttribute \"style\", \"display:none\"\n        # resultFooter.setAttribute \"style\", \"max-height:#{console.getBoundingClientRect().height / 2.6 | 0}px\"\n        resultFooter.setAttribute \"style\", \"\"\n        if isError\n          resultDatum.innerHTML = @preQuote val\n        else\n          resultDatum.innerHTML = @printVal val              \n      else\n        introFooter.setAttribute \"style\", \"\"\n        resultFooter.setAttribute \"style\", \"display:none\"\n        resultDatum.innerHTML = \"\"\n      (@aceEditor())? then\n        @recalculateTextareaSize()\n      else\n        { setTimeout } = @\n        if true\n          # Keep it Simple!\n          setTimeout (=> @view.coffeeArea.scrollTop += 999999), 0\n          return \n        fixUp = =>\n          area = @view.coffeeArea\n          area.focus()\n          (pos = area.selectionEnd)? then\n            pos--\n            area.setSelectionRange?(pos, pos)\n        setTimeout fixUp, 0";
+    x.coffee = "@>\n      x = @view.coffeeArea.value\n      isError = null\n      val = if true\n        @runCode x catch error\n          isError = true\n          val = error.stack ? error?.toString() ? error ? \"Undefined error\"\n      else\n        @evalWithSourceMap x\n      { coffeecharniaConsole: console, introFooter, resultFooter, resultDatum } = @view\n      if val?\n        introFooter.setAttribute \"style\", \"display:none\"\n        # resultFooter.setAttribute \"style\", \"max-height:#{console.getBoundingClientRect().height / 2.6 | 0}px\"\n        resultFooter.setAttribute \"style\", \"\"\n        if isError\n          resultDatum.innerHTML = @preQuote val\n        else\n          resultDatum.innerHTML = @printVal val              \n      else\n        introFooter.setAttribute \"style\", \"\"\n        resultFooter.setAttribute \"style\", \"display:none\"\n        resultDatum.innerHTML = \"\"\n      (@aceEditor())? then\n        @recalculateTextareaSize()\n      else\n        { setTimeout } = @\n        if true\n          # Keep it Simple!\n          setTimeout (=> @view.coffeeArea.scrollTop += 999999), 0\n          return \n        fixUp = =>\n          area = @view.coffeeArea\n          area.focus()\n          (pos = area.selectionEnd)? then\n            pos--\n            area.setSelectionRange?(pos, pos)\n        setTimeout fixUp, 0\n  ";
     return x;
   })(function() {
     var console, error, fixUp, introFooter, isError, resultDatum, resultFooter, setTimeout, val, x, _ref;
@@ -168,7 +312,7 @@ window.coffeecharnia = {
       var _ref, _ref1, _ref2;
       if (true) {
         try {
-          return this.evalCoffeescript(x);
+          return this.runCode(x);
         } catch (_error) {
           error = _error;
           isError = true;
@@ -219,7 +363,7 @@ window.coffeecharnia = {
     }
   }),
   setup: (function(x) {
-    x.coffee = "@>\n      # @fs.readFileSync = (x)=> @readFileSync(x)\n      # @fs.writeFileSync = (x)=> @readFileSync(x)\n      # @ace? and @setupAce()\n      app = @\n      @view.runButton.onclick      = => @runButtonClick()\n      @view.enlargeButton.onclick  = => @enlargeButtonClick()\n      # @view.dragButton.onmousedown = (event)-> app.dragButtonDown(event,this)\n      @view.dragButton.onmouseup   = (event)-> app.dragButtonUp(event,this)\n      @view.shrinkButton.onclick   = => @shrinkButtonClick()\n      @view.killButton.onclick     = => @killButtonClick()\n      area = @view.coffeeArea\n      area.focus()\n      (pos = area.value.length)? then area.setSelectionRange?(pos, pos)\n      area.setupTransform = (editor)->\n        area.transformed = editor\n        app.aceRefcoffeeMode (mode)->\n          editor.getSession().setMode(mode)\n        editor.setTheme(\"ace/theme/merbivore\")\n      @getElement().onkeydown = (event)->\n        return app.handleEnterKey?(event) if event.keyCode and event.keyCode is 13\n        true";
+    x.coffee = "@>\n      # @fs.readFileSync = (x)=> @readFileSync(x)\n      # @fs.writeFileSync = (x)=> @readFileSync(x)\n      # @ace? and @setupAce()\n      app = @\n      @view.runButton.onclick      = => @runButtonClick()\n      @view.enlargeButton.onclick  = => @enlargeButtonClick()\n      # @view.dragButton.onmousedown = (event)-> app.dragButtonDown(event,this)\n      @view.dragButton.onmouseup   = (event)-> app.dragButtonUp(event,this)\n      @view.shrinkButton.onclick   = => @shrinkButtonClick()\n      @view.killButton.onclick     = => @killButtonClick()\n      area = @view.coffeeArea\n      area.focus()\n      (pos = area.value.length)? then area.setSelectionRange?(pos, pos)\n      area.setupTransform = (editor)->\n        area.transformed = editor\n        app.aceRefcoffeeMode (mode)->\n          editor.getSession().setMode(mode)\n        editor.setTheme(\"ace/theme/merbivore\")\n      @getElement().onkeydown = (event)->\n        return app.handleEnterKey?(event) if event.keyCode and event.keyCode is 13\n        true\n                 \n  ";
     return x;
   })(function() {
     var app, area, pos;
@@ -281,7 +425,7 @@ window.coffeecharnia = {
     return this.exit();
   }),
   shrinkButtonClick: (function(x) {
-    x.coffee = "@>\n      el = @getElement()\n      s = @sizePercentage ? 38\n      s = s / 100.0\n      s = s / (1 + 0.05 + (1 - s) / 5)\n      s = 0.1 if s < 0.1\n      @sizePercentage = s * 100\n      el.setAttribute('style', @inlineStyle())\n      @recalculateTextareaSize()";
+    x.coffee = "@>\n      el = @getElement()\n      s = @sizePercentage ? 38\n      s = s / 100.0\n      s = s / (1 + 0.05 + (1 - s) / 5)\n      s = 0.1 if s < 0.1\n      @sizePercentage = s * 100\n      el.setAttribute('style', @inlineStyle())\n      @recalculateTextareaSize()\n  \n  ";
     return x;
   })(function() {
     var el, s, _ref;
@@ -297,7 +441,7 @@ window.coffeecharnia = {
     return this.recalculateTextareaSize();
   }),
   dragButtonUp: (function(x) {
-    x.coffee = "(ev,el)@>\n     r = el.getClientRects()[0]\n     x = (((ev.clientX - r.left) / r.width) * 3)|0\n     y = (((ev.clientY - r.top) / r.height) * 3)|0\n     x < 0 then x = 0 else x > 3 then x = 3\n     y < 0 then y = 0 else y > 3 then y = 3\n     @gravity = [ x, y ]\n     el = @getElement()\n     el.setAttribute('style', @inlineStyle())\n     @recalculateTextareaSize()              ";
+    x.coffee = "(ev,el)@>\n     r = el.getClientRects()[0]\n     x = (((ev.clientX - r.left) / r.width) * 3)|0\n     y = (((ev.clientY - r.top) / r.height) * 3)|0\n     x < 0 then x = 0 else x > 3 then x = 3\n     y < 0 then y = 0 else y > 3 then y = 3\n     @gravity = [ x, y ]\n     el = @getElement()\n     el.setAttribute('style', @inlineStyle())\n     @recalculateTextareaSize()              \n       \n  ";
     return x;
   })(function(ev, el) {
     var r, x, y;
@@ -320,7 +464,7 @@ window.coffeecharnia = {
     return this.recalculateTextareaSize();
   }),
   enlargeButtonClick: (function(x) {
-    x.coffee = "@>\n     el = @getElement()\n     s = @sizePercentage ? 38\n     s = s / 100.0\n     s = s * (1 + 0.05 + (1 - s)/5)\n     s = 1 if s > 1\n     @sizePercentage = s * 100\n     el.setAttribute('style', @inlineStyle())\n     @recalculateTextareaSize()";
+    x.coffee = "@>\n     el = @getElement()\n     s = @sizePercentage ? 38\n     s = s / 100.0\n     s = s * (1 + 0.05 + (1 - s)/5)\n     s = 1 if s > 1\n     @sizePercentage = s * 100\n     el.setAttribute('style', @inlineStyle())\n     @recalculateTextareaSize()\n   \n  ";
     return x;
   })(function() {
     var el, s, _ref;
@@ -336,7 +480,7 @@ window.coffeecharnia = {
     return this.recalculateTextareaSize();
   }),
   hideButtonClick: (function(x) {
-    x.coffee = "@>\n     el = @getElement()\n     el.setAttribute \"style\", el.getAttribute(\"style\") + \";display:none\"";
+    x.coffee = "@>\n     el = @getElement()\n     el.setAttribute \"style\", el.getAttribute(\"style\") + \";display:none\"\n                 \n  ";
     return x;
   })(function() {
     var el;
@@ -344,7 +488,7 @@ window.coffeecharnia = {
     return el.setAttribute("style", el.getAttribute("style") + ";display:none");
   }),
   getSelection: (function(x) {
-    x.coffee = "@>\n      (t = @view.coffeeArea.transformed)? then\n        t.getSelection()\n      else\n        @getInputSelection(@view)";
+    x.coffee = "@>\n      (t = @view.coffeeArea.transformed)? then\n        t.getSelection()\n      else\n        @getInputSelection(@view)\n                 \n  ";
     return x;
   })(function() {
     var t;
@@ -355,13 +499,13 @@ window.coffeecharnia = {
     }
   }),
   aceEditor: (function(x) {
-    x.coffee = "@>\n      @view.coffeeArea.transformed";
+    x.coffee = "@>\n      @view.coffeeArea.transformed\n                    \n  ";
     return x;
   })(function() {
     return this.view.coffeeArea.transformed;
   }),
   handleEnterKey: (function(x) {
-    x.coffee = "(event)@>\n      if event.shiftKey\n        return true\n      if event.ctrlKey\n            @runButtonClick()\n            return false\n      (editor = @aceEditor())? then\n        alert = @alert\n        cursorPosition = editor.getCursorPosition()\n        doc = editor.session.doc\n        lines = doc.getLength()\n        # lines - 1 <= cursorPosition.row then\n        line = doc.getLine(cursorPosition.row)\n        !/\\S/.test(line) then\n                line.length is cursorPosition.column then\n                    @runButtonClick()\n                    return false\n      else\n        area = @view.coffeeArea\n        (end = area.selectionEnd)? then\n          text = area.value\n          text.length > 0 and text.length <= end and text[text.length - 1] is \"\\n\" then\n              @runButtonClick()\n              return false\n      true";
+    x.coffee = "(event)@>\n      if event.shiftKey\n        return true\n      if event.ctrlKey\n            @runButtonClick()\n            return false\n      (editor = @aceEditor())? then\n        alert = @alert\n        cursorPosition = editor.getCursorPosition()\n        doc = editor.session.doc\n        lines = doc.getLength()\n        # lines - 1 <= cursorPosition.row then\n        line = doc.getLine(cursorPosition.row)\n        !/\\S/.test(line) then\n                line.length is cursorPosition.column then\n                    @runButtonClick()\n                    return false\n      else\n        area = @view.coffeeArea\n        (end = area.selectionEnd)? then\n          text = area.value\n          text.length > 0 and text.length <= end and text[text.length - 1] is \"\\n\" then\n              @runButtonClick()\n              return false\n      true\n                 \n  ";
     return x;
   })(function(event) {
     var alert, area, cursorPosition, doc, editor, end, line, lines, text;
@@ -397,7 +541,7 @@ window.coffeecharnia = {
     return true;
   }),
   aceRefcoffeeMode: (function(x) {
-    x.coffee = "(cb)@>\n      cb? then\n        ace = @libs.ace\n        ace.config.loadModule \"ace/mode/coffee\", =>\n          @libs.aceRefcoffeeMode.setup ace: @libs.ace, CoffeeScript: @libs.CoffeeScript\n          cb \"ace/mode/refcoffee\"\n      else\n        try\n          @libs.aceRefcoffeeMode.setup ace: @libs.ace, CoffeeScript: @libs.CoffeeScript\n          @libs.ace.require(\"ace/mode/refcoffee\")\n          \"ace/mode/refcoffee\"\n        catch e\n          \"ace/mode/coffee\"";
+    x.coffee = "(cb)@>\n      cb? then\n        ace = @libs.ace\n        ace.config.loadModule \"ace/mode/coffee\", =>\n          @libs.aceRefcoffeeMode.setup ace: @libs.ace, CoffeeScript: @libs.CoffeeScript\n          cb \"ace/mode/refcoffee\"\n      else\n        try\n          @libs.aceRefcoffeeMode.setup ace: @libs.ace, CoffeeScript: @libs.CoffeeScript\n          @libs.ace.require(\"ace/mode/refcoffee\")\n          \"ace/mode/refcoffee\"\n        catch e\n          \"ace/mode/coffee\"\n    \n  ";
     return x;
   })(function(cb) {
     var ace, e;
@@ -433,7 +577,7 @@ window.coffeecharnia = {
         RegExp: RegExp
       },
       setup: (function(x) {
-        x.coffee = "(ace)@>\n        { document, RegExp } = @lib\n        return if document.getElementById \"ccapcss\"\n        ace.require [\"ace/layer/text\"], ({Text}) ->\n          return if document.getElementById \"ccapcss\"\n          orig = Text.prototype.$renderToken\n        \n          patched = do (\n            rgx = new RegExp \"[a-z][0-9]*[A-Z]\", \"g\"\n          ) -> (builder, col, token, value) ->\n            if match = rgx.exec value\n              type = token.type\n              type_c = type + \".ccap\"\n              p = 0\n              loop\n                q = rgx.lastIndex - 1\n                s = value.substring(p, q)\n                col = orig.call @, builder, col, { type, value: s }, s\n                s = value.substring(q, p = q + 1)\n                col = orig.call @, builder, col, { type: type_c, value: s }, s\n                break unless match = rgx.exec value\n              s = value.substring(p)\n              orig.call @, builder, col, { type, value: s }, s            \n            else\n              orig.apply @, arguments\n        \n          Text.prototype.$renderToken = patched\n        \n          x = document.createElement \"style\"\n          x.id = \"ccapcss\"\n          x.innerHTML = \".ace_ccap { font-weight: bold; }\"\n          document.head.appendChild x";
+        x.coffee = "(ace)@>\n        { document, RegExp } = @lib\n        return if document.getElementById \"ccapcss\"\n        ace.require [\"ace/layer/text\"], ({Text}) ->\n          return if document.getElementById \"ccapcss\"\n          orig = Text.prototype.$renderToken\n        \n          patched = do (\n            rgx = new RegExp \"[a-z][0-9]*[A-Z]\", \"g\"\n          ) -> (builder, col, token, value) ->\n            if match = rgx.exec value\n              type = token.type\n              type_c = type + \".ccap\"\n              p = 0\n              loop\n                q = rgx.lastIndex - 1\n                s = value.substring(p, q)\n                col = orig.call @, builder, col, { type, value: s }, s\n                s = value.substring(q, p = q + 1)\n                col = orig.call @, builder, col, { type: type_c, value: s }, s\n                break unless match = rgx.exec value\n              s = value.substring(p)\n              orig.call @, builder, col, { type, value: s }, s            \n            else\n              orig.apply @, arguments\n        \n          Text.prototype.$renderToken = patched\n        \n          x = document.createElement \"style\"\n          x.id = \"ccapcss\"\n          x.innerHTML = \".ace_ccap { font-weight: bold; }\"\n          document.head.appendChild x\n    ";
         return x;
       })(function(ace) {
         var RegExp, document, _ref;
@@ -513,20 +657,20 @@ window.coffeecharnia = {
         return x;
       })(function() {}),
       getElement: (function(x) {
-        x.coffee = "(name)@>\n        # Get a named element of the widget\n        @element.getElementsByClassName(@cssClass(name))?[0]\n      \n      # For use inside 'make'";
+        x.coffee = "(name)@>\n        # Get a named element of the widget\n        @element.getElementsByClassName(@cssClass(name))?[0]\n      \n      # For use inside 'make'\n      ";
         return x;
       })(function(name) {
         var _ref;
         return (_ref = this.element.getElementsByClassName(this.cssClass(name))) != null ? _ref[0] : void 0;
       }),
       cssClass: (function(x) {
-        x.coffee = "(name)@>\n        @cssPrefix + name";
+        x.coffee = "(name)@>\n        @cssPrefix + name\n      ";
         return x;
       })(function(name) {
         return this.cssPrefix + name;
       }),
       homeEvent: (function(x) {
-        x.coffee = "(name)@>\n        \"javascript:#{@eventHome ? throw \"No event home defined\"}.#{name}(event,this)\"\n      \n      # Implementation";
+        x.coffee = "(name)@>\n        \"javascript:#{@eventHome ? throw \"No event home defined\"}.#{name}(event,this)\"\n      \n      # Implementation\n      ";
         return x;
       })(function(name) {
         var _ref;
@@ -542,7 +686,7 @@ window.coffeecharnia = {
       cssPrefix: "",
       element: null,
       make: (function(x) {
-        x.coffee = "(withHtmlcup, options)@>\n        throw \"virtual method\"\n        # Example of how to invoke this:\n        # element = (htmlGizmo = __proto__: htmlGizmo).make ((x)-> @element = htmlcup.captureFirstTag x), { controller: charnia, text }\n        cssClass = (name)=> @cssClass name\n        homeEvent = (name)=> @homeEvent name\n        containerClass = cssClass 'container'\n        withHtmlcup.call @, ->\n            @div class:containerClass, ->\n                @button onclick:homeEvent(\"click\"), \"Hello\"";
+        x.coffee = "(withHtmlcup, options)@>\n        throw \"virtual method\"\n        # Example of how to invoke this:\n        # element = (htmlGizmo = __proto__: htmlGizmo).make ((x)-> @element = htmlcup.captureFirstTag x), { controller: charnia, text }\n        cssClass = (name)=> @cssClass name\n        homeEvent = (name)=> @homeEvent name\n        containerClass = cssClass 'container'\n        withHtmlcup.call @, ->\n            @div class:containerClass, ->\n                @button onclick:homeEvent(\"click\"), \"Hello\"\n    ";
         return x;
       })(function(withHtmlcup, options) {
         var containerClass, cssClass, homeEvent;
@@ -577,7 +721,7 @@ window.coffeecharnia = {
         license: "MIT"
       },
       pkgTest: (function(x) {
-        x.coffee = "@>\n        testPrint = (v, r)=>\n          r2 = @print(v)\n          if r isnt r2\n            throw \"Expected representation: '#{r}', obtained: '#{r2}'\"\n        testPrint [ ], \"[ ]\"\n        testPrint [ { } ], \"[ { } ]\"\n        testPrint new @Date(\"2014-05-12T23:04:24.627Z\"), 'new Date(\"2014-05-12T23:04:24.627Z\")'";
+        x.coffee = "@>\n        testPrint = (v, r)=>\n          r2 = @print(v)\n          if r isnt r2\n            throw \"Expected representation: '#{r}', obtained: '#{r2}'\"\n        testPrint [ ], \"[ ]\"\n        testPrint [ { } ], \"[ { } ]\"\n        testPrint new @Date(\"2014-05-12T23:04:24.627Z\"), 'new Date(\"2014-05-12T23:04:24.627Z\")'\n      ";
         return x;
       })(function() {
         var testPrint;
@@ -610,7 +754,7 @@ window.coffeecharnia = {
         return true;
       }),
       limitLines: (function(x) {
-        x.coffee = "(maxLines)@>\n        lines: 0\n        maxLines: maxLines\n        newline: @> @lines++ < @maxLines\n        __proto__: @";
+        x.coffee = "(maxLines)@>\n        lines: 0\n        maxLines: maxLines\n        newline: @> @lines++ < @maxLines\n        __proto__: @\n      ";
         return x;
       })(function(maxLines) {
         return {
@@ -626,7 +770,7 @@ window.coffeecharnia = {
         };
       }),
       withFilter: (function(x) {
-        x.coffee = "(filter)@>\n        filter: filter\n        __proto__: @";
+        x.coffee = "(filter)@>\n        filter: filter\n        __proto__: @\n      ";
         return x;
       })(function(filter) {
         return {
@@ -635,10 +779,10 @@ window.coffeecharnia = {
         };
       }),
       print: (function(x) {
-        x.coffee = "(x, prev, depth = 0, ind = \"\")@>\n          p = arguments.callee\n          depth = depth + 1\n          print = (y)=> p.call @, y, { prev, x }, depth\n          clean = (x)->\n            if /^[(]([(@][^\\n]*)[)]$/.test x\n              x.substring(1, x.length - 1)\n            else\n              x\n          if x == null\n            ind + \"null\"\n          else if x == @global\n            ind + @globalName\n          else if x == undefined\n            ind + \"undefined\"\n          else\n            t = typeof x\n            if t is \"boolean\"\n              ind + if x then \"true\" else \"false\"\n            else if t is \"number\"\n              ind + @printNumber x\n            else if t is \"string\"\n              if x.length > 8 and /\\n/.test x\n                l = x.split(\"\\n\")\n                l = (x.replace /\\\"\\\"\\\"/g, '\\\"\\\"\\\"' for x in l)\n                l.unshift ind + '\"\"\"'\n                l.push     ind + '\"\"\"'\n                l.join(ind + \"\\n\")\n              else\n                ind + '\"' + x.replace(/[\\\"\\\\]/g, (x)-> \"\\\\#{x}\") + '\"'\n            else if t is \"function\"\n              ni = ind + \"  \"\n              if x.coffee?\n                # YAY a reflective function!!!\n                s = x.coffee\n                if depth is 1 or /\\n/.test s\n                  lines = s.split \"\\n\"\n                  if lines.length > 1\n                    if (mn = lines[1].match(/^[ \\t]+/))?\n                      mn = mn[0].length\n                      id = mn - ni.length\n                      if id > 0\n                        x = new @RegExp(\"[ \\\\t]{#{id}}\")\n                        lines = (line.replace x, \"\" for line in lines)\n                      else if id < 0\n                        ni = @Array(-id + 1).join(\" \")\n                        lines = (ni + line for line in lines)                \n                  lines.join(\"\\n\")\n                else\n                  ind + \"(\" + s + \")\"\n              else\n                ind + x.toString().replace(/\\n/g, '\\n' + ni)\n            else if (c = (do (p = prev, c = 1)-> (return c if p.x == x; p = p.prev; c++) while p?; 0))\n              # Report cyclic structures\n              \"<cycle-#{c}+#{depth - c - 1}>\"\n            else if t isnt \"object\"\n              # print object of odd type\n              \"<#{t}>\"\n            else if @Array.isArray x\n              if x.length is 0\n                \"[ ]\"\n              else\n                cl = 2\n                hasLines = false\n                xxxx = for xx in x\n                  break unless @newline()\n                  xx = print xx\n                  hasLines = true if /\\n/.test xx\n                  cl += 2 + xx.length\n                  xx\n                if not hasLines and depth * 2 + cl + 1 < @columns\n                  \"[ \" + xxxx.join(\", \") + \" ]\"\n                else\n                  ni = ind + \"  \"\n                  l = [ ind + \"[\" ]\n                  for xx in xxxx\n                    l.push ni + clean(xx).replace(/\\n/g, '\\n' + ni)\n                  l.push ind + \"]\"\n                  l.join \"\\n\"\n            else\n              l = [ ]\n              @window?.document?   and   x.id?   and   typeof x.id is \"string\"   and   x is @window.document.getElementById x.id   then\n                return \"#{ind}window.document.getElementById '#{ x.id.replace(/\\'/, \"\\\\'\") }'\"\n              @symbolicPackages and depth > 1 and (packageVersion = x.pkgInfo?.version)? then\n                return ind + \"dynmodArchive.load '\" + packageVersion.replace(/\\ .*/, \"\") + \"'\"\n              ind = \"\"\n              if x instanceof @Date\n                return \"new Date(\\\"#{x.toISOString()}\\\")\"\n              keys = (k for k of x)\n              if keys.length is 0\n                return \"{ }\"\n              unless (!prev? or typeof prev.x is \"object\" and !@Array.isArray prev.x)\n                l = [ \"do->\" ]\n                ind = \"  \"\n              ni = ind + \"  \"\n              # keys = (h)@> (x for x of h).sort()\n              kvFilter = @filter ? (-> true)\n              for k in keys\n                break unless @newline()\n                v = x[k]\n                if !kvFilter(k,v)\n                  l.push \"#{ind}# #{k}: <#{typeof v}>\"\n                else if @global[k] is v\n                  # l.push ind + k + \": eval \" + \"'\" + k + \"'\"\n                  l.push \"#{ind}#{k}: #{@globalName}.#{k}\"\n                else\n                  v = clean(print v).replace(/\\n/g, '\\n' + ni)\n                  if !/\\n/.test(v) and  ind.length + k.toString().length + 2 + v.length < @columns\n                    l.push ind + k + \": \" + v\n                  else\n                    l.push ind + k + \":\"\n                    l.push ni + v\n              if l.length\n                l.join \"\\n\"\n              else\n                \"{ }\"";
+        x.coffee = "(x, prev, depth = 0, ind = \"\")@>\n          p = arguments.callee\n          depth = depth + 1\n          print = (y)=> p.call @, y, { prev, x }, depth\n          clean = (x)->\n            if /^[(]([(@][^\\n]*)[)]$/.test x\n              x.substring(1, x.length - 1)\n            else\n              x\n          if x == null\n            ind + \"null\"\n          else if x == @global\n            ind + @globalName\n          else if x == undefined\n            ind + \"undefined\"\n          else\n            t = typeof x\n            if t is \"boolean\"\n              ind + if x then \"true\" else \"false\"\n            else if t is \"number\"\n              ind + @printNumber x\n            else if t is \"string\"\n              if x.length > 8 and /\\n/.test x\n                l = x.split(\"\\n\")\n                l = (x.replace /\\\"\\\"\\\"/g, '\\\"\\\"\\\"' for x in l)\n                l.unshift ind + '\"\"\"'\n                l.push     ind + '\"\"\"'\n                l.join(ind + \"\\n\")\n              else\n                ind + '\"' + x.replace(/[\\\"\\\\]/g, (x)-> \"\\\\#{x}\") + '\"'\n            else if t is \"function\"\n              ni = ind + \"  \"\n              if x.coffee?\n                # YAY a reflective function!!!\n                s = x.coffee\n                if depth is 1 or /\\n/.test s\n                  lines = s.split \"\\n\"\n                  if lines.length > 1\n                    if (mn = lines[1].match(/^[ \\t]+/))?\n                      mn = mn[0].length\n                      id = mn - ni.length\n                      if id > 0\n                        x = new @RegExp(\"[ \\\\t]{#{id}}\")\n                        lines = (line.replace x, \"\" for line in lines)\n                      else if id < 0\n                        ni = @Array(-id + 1).join(\" \")\n                        lines = (ni + line for line in lines)                \n                  lines.join(\"\\n\")\n                else\n                  ind + \"(\" + s + \")\"\n              else\n                ind + x.toString().replace(/\\n/g, '\\n' + ni)\n            else if (c = (do (p = prev, c = 1)-> (return c if p.x == x; p = p.prev; c++) while p?; 0))\n              # Report cyclic structures\n              \"<cycle-#{c}+#{depth - c - 1}>\"\n            else if t isnt \"object\"\n              # print object of odd type\n              \"<#{t}>\"\n            else if @Array.isArray x\n              if x.length is 0\n                \"[ ]\"\n              else\n                cl = 2\n                hasLines = false\n                xxxx = for xx in x\n                  break unless @newline()\n                  xx = print xx\n                  hasLines = true if /\\n/.test xx\n                  cl += 2 + xx.length\n                  xx\n                if not hasLines and depth * 2 + cl + 1 < @columns\n                  \"[ \" + xxxx.join(\", \") + \" ]\"\n                else\n                  ni = ind + \"  \"\n                  l = [ ind + \"[\" ]\n                  for xx in xxxx\n                    l.push ni + clean(xx).replace(/\\n/g, '\\n' + ni)\n                  l.push ind + \"]\"\n                  l.join \"\\n\"\n            else\n              l = [ ]\n              @window?.document?   and   x.id?   and   typeof x.id is \"string\"   and   x is @window.document.getElementById x.id   then\n                return \"#{ind}window.document.getElementById '#{ x.id.replace(/\\'/, \"\\\\'\") }'\"\n              @symbolicPackages and depth > 1 and (packageVersion = x.pkgInfo?.version)? then\n                return ind + \"dynmodArchive.load '\" + packageVersion.replace(/\\ .*/, \"\") + \"'\"\n              ind = \"\"\n              if x instanceof @Date\n                return \"new Date(\\\"#{x.toISOString()}\\\")\"\n              keys = (k for k of x)\n              if keys.length is 0\n                return \"{ }\"\n              unless (!prev? or typeof prev.x is \"object\" and !@Array.isArray prev.x)\n                l = [ \"do->\" ]\n                ind = \"  \"\n              ni = ind + \"  \"\n              # keys = (h)@> (x for x of h).sort()\n              kvFilter = @filter ? (-> true)\n              for k in keys\n                break unless @newline()\n                verr = null\n                v = x[k] catch error\n                  verr = error.toString()\n                if verr?\n                  verr = \"Error:#{verr}\" unless /^[Ee]rror:/.test verr\n                  l.push \"#{ind}# #{k}: <#{verr}>\"\n                else if !kvFilter(k,v)\n                  l.push \"#{ind}# #{k}: <#{typeof v}>\"\n                else if @global[k] is v\n                  # l.push ind + k + \": eval \" + \"'\" + k + \"'\"\n                  l.push \"#{ind}#{k}: #{@globalName}.#{k}\"\n                else\n                  v = clean(print v).replace(/\\n/g, '\\n' + ni)\n                  if !/\\n/.test(v) and  ind.length + k.toString().length + 2 + v.length < @columns\n                    l.push ind + k + \": \" + v\n                  else\n                    l.push ind + k + \":\"\n                    l.push ni + v\n              if l.length\n                l.join \"\\n\"\n              else\n                \"{ }\"\n      ";
         return x;
       })(function(x, prev, depth, ind) {
-        var c, cl, clean, hasLines, id, k, keys, kvFilter, l, line, lines, mn, ni, p, packageVersion, print, s, t, v, xx, xxxx, _i, _j, _len, _len1, _ref, _ref1, _ref2;
+        var c, cl, clean, error, hasLines, id, k, keys, kvFilter, l, line, lines, mn, ni, p, packageVersion, print, s, t, v, verr, xx, xxxx, _i, _j, _len, _len1, _ref, _ref1, _ref2;
         if (depth == null) {
           depth = 0;
         }
@@ -821,8 +965,19 @@ window.coffeecharnia = {
               if (!this.newline()) {
                 break;
               }
-              v = x[k];
-              if (!kvFilter(k, v)) {
+              verr = null;
+              try {
+                v = x[k];
+              } catch (_error) {
+                error = _error;
+                verr = error.toString();
+              }
+              if (verr != null) {
+                if (!/^[Ee]rror:/.test(verr)) {
+                  verr = "Error:" + verr;
+                }
+                l.push("" + ind + "# " + k + ": <" + verr + ">");
+              } else if (!kvFilter(k, v)) {
                 l.push("" + ind + "# " + k + ": <" + (typeof v) + ">");
               } else if (this.global[k] === v) {
                 l.push("" + ind + k + ": " + this.globalName + "." + k);
@@ -861,7 +1016,7 @@ window.coffeecharnia = {
           license: "GPL3"
         },
         quoteTagText: (function(x) {
-          x.coffee = "(str) @>\n            str.replace /[&<]/g, (c) ->\n              if c is '<' then '&lt;' else '&amp;'";
+          x.coffee = "(str) @>\n            str.replace /[&<]/g, (c) ->\n              if c is '<' then '&lt;' else '&amp;'\n        ";
           return x;
         })(function(str) {
           return str.replace(/[&<]/g, function(c) {
@@ -873,7 +1028,7 @@ window.coffeecharnia = {
           });
         }),
         quoteText: (function(x) {
-          x.coffee = "(str) @>\n            str.replace /[&<\"]/g, (c) ->              # \"\n              if c is '<' then '&lt;'\n              else if c is '&'\n              then '&amp;'\n              else '&quot;'";
+          x.coffee = "(str) @>\n            str.replace /[&<\"]/g, (c) ->              # \"\n              if c is '<' then '&lt;'\n              else if c is '&'\n              then '&amp;'\n              else '&quot;'\n        ";
           return x;
         })(function(str) {
           return str.replace(/[&<"]/g, function(c) {
@@ -893,7 +1048,7 @@ window.coffeecharnia = {
           return this.printHtml("<!DOCTYPE html>\n");
         }),
         voidElements: (function(x) {
-          x.coffee = "@>\n            # References:\n            #  http://www.w3.org/TR/html5/syntax.html\n            #  http://www.w3.org/TR/html-markup/elements.html\n            \"area, base, br, col, command, embed, hr, img, input, keygen, link, meta, param, source, track, wbr\"";
+          x.coffee = "@>\n            # References:\n            #  http://www.w3.org/TR/html5/syntax.html\n            #  http://www.w3.org/TR/html-markup/elements.html\n            \"area, base, br, col, command, embed, hr, img, input, keygen, link, meta, param, source, track, wbr\"\n        ";
           return x;
         })(function() {
           return "area, base, br, col, command, embed, hr, img, input, keygen, link, meta, param, source, track, wbr";
@@ -911,13 +1066,13 @@ window.coffeecharnia = {
           return 'script, style';
         }),
         allElements: (function(x) {
-          x.coffee = "@>\n          \"\"\"\n          a, abbr, address, area, article, aside, audio, b, base, bdi, bdo,\n          blockquote, body, br, button, button, button, button, canvas, caption,\n          cite, code, col, colgroup, command, command, command, command,\n          datalist, dd, del, details, dfn, div, dl, dt, em, embed, fieldset,\n          figcaption, figure, footer, form, h1, h2, h3, h4, h5, h6, head,\n          header, hgroup, hr, html, i, iframe, img, input, ins, kbd, keygen,\n          label, legend, li, link, map, mark, menu, meta, meta, meta, meta,\n          meta, meta, meter, nav, noscript, object, ol, optgroup, option,\n          output, p, param, pre, progress, q, rp, rt, ruby, s, samp, script,\n          section, select, small, source, span, strong, style, sub, summary,\n          sup, table, tbody, td, textarea, tfoot, th, thead, time, title, tr,\n          track, u, ul, var, video, wbr\n          \"\"\"";
+          x.coffee = "@>\n          \"\"\"\n          a, abbr, address, area, article, aside, audio, b, base, bdi, bdo,\n          blockquote, body, br, button, button, button, button, canvas, caption,\n          cite, code, col, colgroup, command, command, command, command,\n          datalist, dd, del, details, dfn, div, dl, dt, em, embed, fieldset,\n          figcaption, figure, footer, form, h1, h2, h3, h4, h5, h6, head,\n          header, hgroup, hr, html, i, iframe, img, input, ins, kbd, keygen,\n          label, legend, li, link, map, mark, menu, meta, meta, meta, meta,\n          meta, meta, meter, nav, noscript, object, ol, optgroup, option,\n          output, p, param, pre, progress, q, rp, rt, ruby, s, samp, script,\n          section, select, small, source, span, strong, style, sub, summary,\n          sup, table, tbody, td, textarea, tfoot, th, thead, time, title, tr,\n          track, u, ul, var, video, wbr\n          \"\"\"\n        ";
           return x;
         })(function() {
           return "a, abbr, address, area, article, aside, audio, b, base, bdi, bdo,\nblockquote, body, br, button, button, button, button, canvas, caption,\ncite, code, col, colgroup, command, command, command, command,\ndatalist, dd, del, details, dfn, div, dl, dt, em, embed, fieldset,\nfigcaption, figure, footer, form, h1, h2, h3, h4, h5, h6, head,\nheader, hgroup, hr, html, i, iframe, img, input, ins, kbd, keygen,\nlabel, legend, li, link, map, mark, menu, meta, meta, meta, meta,\nmeta, meta, meter, nav, noscript, object, ol, optgroup, option,\noutput, p, param, pre, progress, q, rp, rt, ruby, s, samp, script,\nsection, select, small, source, span, strong, style, sub, summary,\nsup, table, tbody, td, textarea, tfoot, th, thead, time, title, tr,\ntrack, u, ul, var, video, wbr";
         }),
         compileTag: (function(x) {
-          x.coffee = "(tagName, isVoid, isRawText) @> (args...) ->\n            @printHtml \"<#{tagName}\"\n            for arg in args\n              if typeof arg is 'function'\n                f = arg\n                break\n              if typeof arg is 'string'\n                s = arg\n                break\n              for x,y of arg\n                if y?\n                  @printHtml \" #{x}=\\\"#{@quoteText y}\\\"\"\n                else\n                  @printHtml \" #{x}\"\n            @printHtml '>'\n            return if isVoid\n            f.apply @     if f\n            if s\n              if isRawText\n                @printHtml s\n              else\n                @printHtml @quoteTagText s\n            @printHtml '</' + tagName + '>'";
+          x.coffee = "(tagName, isVoid, isRawText) @> (args...) ->\n            @printHtml \"<#{tagName}\"\n            for arg in args\n              if typeof arg is 'function'\n                f = arg\n                break\n              if typeof arg is 'string'\n                s = arg\n                break\n              for x,y of arg\n                if y?\n                  @printHtml \" #{x}=\\\"#{@quoteText y}\\\"\"\n                else\n                  @printHtml \" #{x}\"\n            @printHtml '>'\n            return if isVoid\n            f.apply @     if f\n            if s\n              if isRawText\n                @printHtml s\n              else\n                @printHtml @quoteTagText s\n            @printHtml '</' + tagName + '>'\n        ";
           return x;
         })(function(tagName, isVoid, isRawText) {
           var __slice = [].slice;
@@ -962,7 +1117,7 @@ window.coffeecharnia = {
           };
         }),
         compileLib: (function(x) {
-          x.coffee = "@>\n            isArray = [].constructor.isArray\n            makeset = (l) ->\n              if typeof l is 'function'\n                l = l.call @\n              if typeof l is 'string'\n                l = l.split \",\"\n              if isArray l\n                r = { }\n                for x in l\n                  x = x.replace(/[^a-z0-9]+/g, \"\")\n                  r[x] = 1\n                return r\n              else\n                return l\n            h = __proto__: @\n            if @voidElements is 'function'\n              h.sourceFunctions = { @voidElements, @rawTextElements, @allElements }\n            h.voidElements = makeset @voidElements\n            h.rawTextElements = makeset @rawTextElements\n            h.allElements = makeset @allElements\n            h[x] = @compileTag(x, ((h.voidElements[x])?), ((h.rawTextElements[x])?)) for x of h.allElements\n            h";
+          x.coffee = "@>\n            isArray = [].constructor.isArray\n            makeset = (l) ->\n              if typeof l is 'function'\n                l = l.call @\n              if typeof l is 'string'\n                l = l.split \",\"\n              if isArray l\n                r = { }\n                for x in l\n                  x = x.replace(/[^a-z0-9]+/g, \"\")\n                  r[x] = 1\n                return r\n              else\n                return l\n            h = __proto__: @\n            if @voidElements is 'function'\n              h.sourceFunctions = { @voidElements, @rawTextElements, @allElements }\n            h.voidElements = makeset @voidElements\n            h.rawTextElements = makeset @rawTextElements\n            h.allElements = makeset @allElements\n            h[x] = @compileTag(x, ((h.voidElements[x])?), ((h.rawTextElements[x])?)) for x of h.allElements\n            h\n        ";
           return x;
         })(function() {
           var h, isArray, makeset, x;
@@ -1018,7 +1173,7 @@ window.coffeecharnia = {
           return this.compileLib();
         }),
         pkgCompress: (function(x) {
-          x.coffee = "@>\n            isArray = [].constructor.isArray\n            h = @sourceFunctions or { }\n            h = @modMixin.call h, @\n            h = @modStrip.call h, @allElements\n            h";
+          x.coffee = "@>\n            isArray = [].constructor.isArray\n            h = @sourceFunctions or { }\n            h = @modMixin.call h, @\n            h = @modStrip.call h, @allElements\n            h\n        ";
           return x;
         })(function() {
           var h, isArray;
@@ -1029,7 +1184,7 @@ window.coffeecharnia = {
           return h;
         }),
         html5Page: (function(x) {
-          x.coffee = "(args...) @>\n            @docType 5\n            @html.apply @, args";
+          x.coffee = "(args...) @>\n            @docType 5\n            @html.apply @, args\n      ";
           return x;
         })(function() {
           var args,
@@ -1047,7 +1202,7 @@ window.coffeecharnia = {
         return this.capturedTokens.push(t);
       }),
       captureHtml: (function(x) {
-        x.coffee = "(f)@>\n        o = @capturedTokens\n        @capturedTokens = []\n        f.apply @\n        p = @capturedTokens\n        @capturedTokens = o\n        r = p.join \"\"\n        @printHtml r\n        r";
+        x.coffee = "(f)@>\n        o = @capturedTokens\n        @capturedTokens = []\n        f.apply @\n        p = @capturedTokens\n        @capturedTokens = o\n        r = p.join \"\"\n        @printHtml r\n        r\n      ";
         return x;
       })(function(f) {
         var o, p, r;
@@ -1064,7 +1219,7 @@ window.coffeecharnia = {
         document: document
       },
       captureFirstTag: (function(x) {
-        x.coffee = "(f)@>\n        { document } = @namedObjects\n        div = document.createElement \"div\"\n        div.innerHTML = @captureHtml f\n        div.firstChild";
+        x.coffee = "(f)@>\n        { document } = @namedObjects\n        div = document.createElement \"div\"\n        div.innerHTML = @captureHtml f\n        div.firstChild\n      ";
         return x;
       })(function(f) {
         var div, document;
@@ -1074,14 +1229,14 @@ window.coffeecharnia = {
         return div.firstChild;
       }),
       stripOuter: (function(x) {
-        x.coffee = "(x)@>\n        x.replace(/^<[^>]*>/, \"\").replace(/<[^>]*>$/, \"\")";
+        x.coffee = "(x)@>\n        x.replace(/^<[^>]*>/, \"\").replace(/<[^>]*>$/, \"\")\n      ";
         return x;
       })(function(x) {
         return x.replace(/^<[^>]*>/, "").replace(/<[^>]*>$/, "");
       }),
       capturedParts: {},
       capturePart: (function(x) {
-        x.coffee = "(tagName, stripOuter = @stripOuter)@> ->\n        x = arguments\n        @capturedParts[tagName] =\n          stripOuter (@captureHtml ->\n            @originalLib[tagName].apply @, x\n          )";
+        x.coffee = "(tagName, stripOuter = @stripOuter)@> ->\n        x = arguments\n        @capturedParts[tagName] =\n          stripOuter (@captureHtml ->\n            @originalLib[tagName].apply @, x\n          )\n      ";
         return x;
       })(function(tagName, stripOuter) {
         if (stripOuter == null) {
@@ -1102,7 +1257,7 @@ window.coffeecharnia = {
         return (this.capturePart("body")).apply(this, arguments);
       }),
       head: (function(x) {
-        x.coffee = "@>\n        lib = @.extendObject\n          title: -> (@capturePart \"title\").apply @, arguments\n          headStyles: []\n          style: ->\n            @headStyles.push (@capturePart \"style\").apply @, arguments\n        r = (lib.capturePart \"head\").apply lib, arguments\n        @capturedParts.headStyles = lib.headStyles\n        @capturedParts.headTitle = lib.capturedParts.title\n        r\n      # script: ->\n      #  scripts = (@capturedParts.scripts or= [])\n      #  push scripts, ((@capturePart \"script\").apply @, arguments)";
+        x.coffee = "@>\n        lib = @.extendObject\n          title: -> (@capturePart \"title\").apply @, arguments\n          headStyles: []\n          style: ->\n            @headStyles.push (@capturePart \"style\").apply @, arguments\n        r = (lib.capturePart \"head\").apply lib, arguments\n        @capturedParts.headStyles = lib.headStyles\n        @capturedParts.headTitle = lib.capturedParts.title\n        r\n      # script: ->\n      #  scripts = (@capturedParts.scripts or= [])\n      #  push scripts, ((@capturePart \"script\").apply @, arguments)\n      ";
         return x;
       })(function() {
         var lib, r;
@@ -1121,7 +1276,7 @@ window.coffeecharnia = {
         return r;
       }),
       html5Page: (function(x) {
-        x.coffee = "@>\n        x = arguments\n        @captureHtml -> @originalLib.html5Page.apply @, x\n        r = @capturedParts\n        @capturedParts = {}\n        r";
+        x.coffee = "@>\n        x = arguments\n        @captureHtml -> @originalLib.html5Page.apply @, x\n        r = @capturedParts\n        @capturedParts = {}\n        r\n    ";
         return x;
       })(function() {
         var r, x;
@@ -1136,7 +1291,7 @@ window.coffeecharnia = {
     },
     aceRefcoffeeMode: {
       setup: (function(x) {
-        x.coffee = "({ace, console, CoffeeScript})@>\n                ace.define \"ace/mode/refcoffee_highlight_rules\", [\n                  \"require\"\n                  \"exports\"\n                  \"module\"\n                  \"ace/mode/coffee_highlight_rules\"\n                ], (req, exports, module)->\n                  RefcoffeeHighlightRules = ->\n                    @$rules.start = [\n                        {\n                          stateName: \"litdoc\"\n                          token: \"string\"\n                          regex: \"''''\"\n                        }\n                    ].concat @$rules.start\n    \n                    @$rules.start = for x in @$rules.start\n                      if x?.regex? and typeof x.regex is 'string'\n                        x.regex = x.regex.replace /\\[\\\\-=\\]>/, \"[\\\\-=@]>\"\n                      x\n                    \n                    @normalizeRules()\n                    return\n                  \"use strict\"\n                  makeClass = (p)-> c = p.constructor; c:: = p; c\n                  CoffeeHighlightRules = req(\"./coffee_highlight_rules\").CoffeeHighlightRules\n                  exports.RefcoffeeHighlightRules = makeClass\n                    constructor: ->\n                      CoffeeHighlightRules.call @\n                      RefcoffeeHighlightRules.call @\n                      return\n                    __proto__: CoffeeHighlightRules::\n                  return\n                  \n                ace.define \"ace/mode/refcoffee\", [\n                  \"require\"\n                  \"exports\"\n                  \"module\"\n                  \"ace/mode/coffee\"\n                  \"ace/mode/refcoffee_highlight_rules\"\n                ], (req, exports, module)->\n                  WorkerClient = undefined\n                  CoffeeMode = req(\"ace/mode/coffee\").Mode\n                  makeClass = (p)-> c = p.constructor; c:: = p; c\n                  Rules = req(\"./refcoffee_highlight_rules\").RefcoffeeHighlightRules\n                  Mode = makeClass\n                    __proto__: CoffeeMode::\n                    constructor: ->\n                      CoffeeMode.call @\n                      @HighlightRules = Rules\n                      # @$outdent = new Outdent()\n                      # @foldingRules = new FoldMode()\n                      return\n                  \"use strict\"\n                  (->\n                    @$id = \"ace/mode/refcoffee\"\n                    @createWorker = (session)-> null\n                    return\n                  ).call Mode::\n                  exports.Mode = Mode\n                  return";
+        x.coffee = "({ace, console, CoffeeScript})@>\n                ace.define \"ace/mode/refcoffee_highlight_rules\", [\n                  \"require\"\n                  \"exports\"\n                  \"module\"\n                  \"ace/mode/coffee_highlight_rules\"\n                ], (req, exports, module)->\n                  RefcoffeeHighlightRules = ->\n                    @$rules.start = [\n                        {\n                          stateName: \"litdoc\"\n                          token: \"string\"\n                          regex: \"''''\"\n                        }\n                    ].concat @$rules.start\n    \n                    @$rules.start = for x in @$rules.start\n                      if x?.regex? and typeof x.regex is 'string'\n                        x.regex = x.regex.replace /\\[\\\\-=\\]>/, \"[\\\\-=@]>\"\n                      x\n                    \n                    @normalizeRules()\n                    return\n                  \"use strict\"\n                  makeClass = (p)-> c = p.constructor; c:: = p; c\n                  CoffeeHighlightRules = req(\"./coffee_highlight_rules\").CoffeeHighlightRules\n                  exports.RefcoffeeHighlightRules = makeClass\n                    constructor: ->\n                      CoffeeHighlightRules.call @\n                      RefcoffeeHighlightRules.call @\n                      return\n                    __proto__: CoffeeHighlightRules::\n                  return\n                  \n                ace.define \"ace/mode/refcoffee\", [\n                  \"require\"\n                  \"exports\"\n                  \"module\"\n                  \"ace/mode/coffee\"\n                  \"ace/mode/refcoffee_highlight_rules\"\n                ], (req, exports, module)->\n                  WorkerClient = undefined\n                  CoffeeMode = req(\"ace/mode/coffee\").Mode\n                  makeClass = (p)-> c = p.constructor; c:: = p; c\n                  Rules = req(\"./refcoffee_highlight_rules\").RefcoffeeHighlightRules\n                  Mode = makeClass\n                    __proto__: CoffeeMode::\n                    constructor: ->\n                      CoffeeMode.call @\n                      @HighlightRules = Rules\n                      # @$outdent = new Outdent()\n                      # @foldingRules = new FoldMode()\n                      return\n                  \"use strict\"\n                  (->\n                    @$id = \"ace/mode/refcoffee\"\n                    @createWorker = (session)-> null\n                    return\n                  ).call Mode::\n                  exports.Mode = Mode\n                  return\n  ";
         return x;
       })(function(_arg) {
         var CoffeeScript, ace, console;
@@ -1224,7 +1379,7 @@ window.coffeecharnia = {
     }
   }),
   jsLoad: (function(x) {
-    x.coffee = "(sym, src, callback)@>\n    charnia = @\n    { window, document, deleteNode } = @lib\n    if sym and window[sym]?\n      callback() if callback?\n      return\n    x = document.createElement('script')\n    x.type = 'text/javascript'\n    x.src = src\n    y = 1\n    x.onload = x.onreadystatechange = ()->\n      charnia.assert(window[sym]?, \"Symbol #{sym} was not defined after loading library\") if sym\n      if y and not @readyState or @readyState is 'complete'\n        y = 0\n        deleteNode x\n        callback() if callback\n    document.getElementsByTagName('head')[0].appendChild x";
+    x.coffee = "(sym, src, callback)@>\n    charnia = @\n    { window, document, deleteNode } = @lib\n    if sym and window[sym]?\n      callback() if callback?\n      return\n    x = document.createElement('script')\n    x.type = 'text/javascript'\n    x.src = src\n    y = 1\n    x.onload = x.onreadystatechange = ()->\n      charnia.assert(window[sym]?, \"Symbol #{sym} was not defined after loading library\") if sym\n      if y and not @readyState or @readyState is 'complete'\n        y = 0\n        deleteNode x\n        callback() if callback\n    document.getElementsByTagName('head')[0].appendChild x\n    \n  ";
     return x;
   })(function(sym, src, callback) {
     var charnia, deleteNode, document, window, x, y, _ref;
@@ -1257,7 +1412,7 @@ window.coffeecharnia = {
   aceUrl: "https://github.com/ajaxorg/ace-builds/raw/master/src-min-noconflict/ace.js",
   htmlGizmo: {
     coffeecharniaLayout: (function(x) {
-      x.coffee = "({ cssClass, header, body, footer, minheight, minwidth, style, innerStyle, htmlcup })@>\n        # return @div \"foobar\"\n          # This seems rather complex, but it appears to be the simplest effective way to get what I want, flex isn't working as expected\n        # @printHtml \"<!DOCTYPE html>\\n\"\n        htmlcup.div class:cssClass, style:\"#{style}\", ->\n          @div style:\"height:100%;display:table;width:100%;max-width:100%;table-layout:fixed\", ->\n              innerStyle? then @style innerStyle\n              if false\n                header.call @, style:\"display:table-row;min-height:1em;overflow:auto;max-height:5em\", class:\"consoleHeader\"\n              else if false\n                @div style:\"display:table-row;min-height:1em;background:pink\", ->\n                  @div style:\"max-height:5em;overflow-y:scroll;overflow-x:hidden;position:relative;display:block\", ->\n                    @div style:\"float:left;width:100%\", contentEditable:\"true\", ->\n                      @div \"x\" for x in [ 0 .. 25 ]\n              else\n                @div style:\"display:table-row;min-height:1em\", ->\n                  @div style:\"max-height:5em;overflow:hidden;position:relative;display:block\", ->\n                    @div style:\"float:left;width:100%\", ->\n                      header?.call @, class:\"consoleHeader\"\n              if false then @div style:\"position:relative;height:100%;overflow:hidden;display:table-row\", ->\n                @div style:\"position:relative;width:100%;height:100%;min-height:#{minheight}\", ->\n                  @div style:\"position:absolute;top:0;right:0;left:0;bottom:0;overflow:auto\", ->\n                    # x (container width)  y (contained width)\n                    \n                    # 2000 px              2000 px\n                    # 1500 px              1500 px\n                    # 1000 px              1000 px\n                    # 800 px               1000 px\n                    # 500 px               1000 px\n                    # 300 px               600 px\n                    # 200 px               400 px\n                    # 150 px               300 px\n                    # 100 px               200 px\n                    \n                    # y = ((x * 2) ^ 1000 px) _ x\n                    #      min-width width     max-width\n                    # This part does not seem to work on my firefox\n                    @div style:\"width:200%;max-width:50em;min-width:100%;height:100%;overflow:hidden\", ->\n                      @div style:\"position:relative;width:100%;height:100%;display:table\", ->\n                      # @div style:\"position:relative;width:100%;max-width:100%;height:100%;overflow:auto\", ->\n                      #  @div style:\"position:absolute;top:0;right:0;left:0;bottom:0;overflow:auto\", ->\n                      #    @div style:\"position:relative;max-width:200%;min-width:60em;display:table;background:black\", ->\n                        body.call @\n              else @div style:\"position:relative;height:100%;overflow:hidden;display:table-row\", ->\n                  @div style:\"position:relative;width:100%;height:100%;min-height:#{minheight}\", ->\n                      @div style:\"position:absolute;top:0;right:0;left:0;bottom:0;overflow:auto\", ->\n                          body.call @\n                #\n              footer.call @, style:\"display:table-row\"";
+      x.coffee = "({ cssClass, header, body, footer, minheight, minwidth, style, innerStyle, htmlcup })@>\n        # return @div \"foobar\"\n          # This seems rather complex, but it appears to be the simplest effective way to get what I want, flex isn't working as expected\n        # @printHtml \"<!DOCTYPE html>\\n\"\n        htmlcup.div class:cssClass, style:\"#{style}\", ->\n          @div style:\"height:100%;display:table;width:100%;max-width:100%;table-layout:fixed\", ->\n              innerStyle? then @style innerStyle\n              if false\n                header.call @, style:\"display:table-row;min-height:1em;overflow:auto;max-height:5em\", class:\"consoleHeader\"\n              else if false\n                @div style:\"display:table-row;min-height:1em;background:pink\", ->\n                  @div style:\"max-height:5em;overflow-y:scroll;overflow-x:hidden;position:relative;display:block\", ->\n                    @div style:\"float:left;width:100%\", contentEditable:\"true\", ->\n                      @div \"x\" for x in [ 0 .. 25 ]\n              else\n                @div style:\"display:table-row;min-height:1em\", ->\n                  @div style:\"max-height:5em;overflow:hidden;position:relative;display:block\", ->\n                    @div style:\"float:left;width:100%\", ->\n                      header?.call @, class:\"consoleHeader\"\n              if false then @div style:\"position:relative;height:100%;overflow:hidden;display:table-row\", ->\n                @div style:\"position:relative;width:100%;height:100%;min-height:#{minheight}\", ->\n                  @div style:\"position:absolute;top:0;right:0;left:0;bottom:0;overflow:auto\", ->\n                    # x (container width)  y (contained width)\n                    \n                    # 2000 px              2000 px\n                    # 1500 px              1500 px\n                    # 1000 px              1000 px\n                    # 800 px               1000 px\n                    # 500 px               1000 px\n                    # 300 px               600 px\n                    # 200 px               400 px\n                    # 150 px               300 px\n                    # 100 px               200 px\n                    \n                    # y = ((x * 2) ^ 1000 px) _ x\n                    #      min-width width     max-width\n                    # This part does not seem to work on my firefox\n                    @div style:\"width:200%;max-width:50em;min-width:100%;height:100%;overflow:hidden\", ->\n                      @div style:\"position:relative;width:100%;height:100%;display:table\", ->\n                      # @div style:\"position:relative;width:100%;max-width:100%;height:100%;overflow:auto\", ->\n                      #  @div style:\"position:absolute;top:0;right:0;left:0;bottom:0;overflow:auto\", ->\n                      #    @div style:\"position:relative;max-width:200%;min-width:60em;display:table;background:black\", ->\n                        body.call @\n              else @div style:\"position:relative;height:100%;overflow:hidden;display:table-row\", ->\n                  @div style:\"position:relative;width:100%;height:100%;min-height:#{minheight}\", ->\n                      @div style:\"position:absolute;top:0;right:0;left:0;bottom:0;overflow:auto\", ->\n                          body.call @\n                #\n              footer.call @, style:\"display:table-row\"\n      ";
       return x;
     })(function(_arg) {
       var body, cssClass, footer, header, htmlcup, innerStyle, minheight, minwidth, style;
@@ -1359,7 +1514,7 @@ window.coffeecharnia = {
     }),
     cssPrefix: "coffeecharnia_",
     make: (function(x) {
-      x.coffee = "(withHtmlcup, { controller, text })@>\n        cssClass = (name)=> @cssClass name\n        homeEvent = (name)=> @homeEvent name\n        containerClass = cssClass 'container'\n        i = @\n        withHtmlcup.call @, -> i.coffeecharniaLayout\n          cssClass: containerClass\n          htmlcup: @\n          style: controller.inlineStyle()\n          innerStyle:\n            \"\"\"\n            .#{containerClass} pre { background:none; color:inherit; }\n            .#{containerClass} div, .#{containerClass} pre { padding: 0; margin:0; }\n            .#{containerClass} a { color: #ffb }\n            .#{containerClass} a:visited { color: #eec }\n            .#{containerClass} a:hover { color: white }\n            \"\"\"\n          minheight: \"7em\",\n          minwidth: \"60em\",\n          head: ->\n            @meta charset:\"utf-8\"\n            @style \"\"\"\n              .#{containerClass} { background:black; color: #ddd; }\n              .#{containerClass} a { color:#5af; }\n              .#{containerClass} a:visited { color:#49f; }\n              .#{containerClass} a:hover { color:#6cf; }\n              .#{containerClass} select, textarea { border: 1px solid #555; }\n              \"\"\"\n          header: (opts)->\n            @style \"\"\"\n                div.thisHeader, .thisHeader div { text-align:center; }\n                \"\"\"\n            @div opts, ->\n              @style \"\"\"\n                /* .#{containerClass} select { min-width:5em; max-width:30%; width:18em; } */\n                .#{containerClass} select, .#{containerClass} button { font-size:inherit; text-align:center;   }\n                .#{containerClass} .button { display:inline-block; }\n                .#{containerClass} button, .#{containerClass} .button, .#{containerClass} input, .#{containerClass} select:not(:focus):not(:hover) { color:white; background:black; }\n                /* select option:not(:checked) { color:red !important; background:black !important; } */\n                /* option:active, option[selected], option:checked, option:hover, option:focus { background:#248 !important; } */\n                .#{containerClass} button, .#{containerClass} .button { min-width:5%; font-size:220%; border: 2px outset grey; }\n                .#{containerClass} button:active, .#{containerClass} .button.button-on { border: 2px inset grey; background:#248; }\n                .#{containerClass} .button input[type=\"checkbox\"] { display:none; }\n                .#{containerClass} .arrow { font-weight:bold;  }\n                .#{containerClass} .editArea { height:100%;width:100%;box-sizing:border-box; }\n                \"\"\"\n          body: (opts)->\n              @style \"\"\"\n                .#{containerClass} textarea { background: black; color: #ddd; }\n                .#{containerClass} button { opacity: 0.22; }\n                .#{containerClass} button:hover, .#{containerClass} button:focus, .#{containerClass} button:active { opacity: 1; }\n                \"\"\"\n              @div style:\"font-size:12px;position:absolute;top:0;right:0;left:0;bottom:0;overflow:hidden\", ->\n                  px = 44;\n                  w = \"width:#{px}px;max-width:#{px}px;min-width:#{px}px\"\n                  i = 1\n                  @button class:cssClass(\"runButton\"),      style:\"#{w};right:0;top:0;position:absolute;z-index:1000000\", \"▶\"\n                  @button class:cssClass(\"enlargeButton\"),  style:\"#{w};right:#{px*(i++)}px;top:0;position:absolute;z-index:1000000\", \"⬜\"\n                  @button class:cssClass(\"dragButton\"),     style:\"#{w};right:#{px*(i++)}px;top:0;position:absolute;z-index:1000000\", \"⛶\"\n                  @button class:cssClass(\"shrinkButton\"),   style:\"#{w};right:#{px*(i++)}px;top:0;position:absolute;z-index:1000000\", \"▫\"\n                  @button class:cssClass(\"killButton\"),     style:\"#{w};right:#{px*(i++)}px;top:0;position:absolute;z-index:1000000\", \"⨯\"\n                  @textarea class:\"#{cssClass(\"coffeeArea\")} editArea\", (text ? \"# Welcome to CoffeeCharnia!\")\n                  ####\n                    # Press return twice after a statement to execute it!\n        \n                    \n          footer: (opts)->\n            @style \"\"\"\n              .#{containerClass} div.#{cssClass 'thisFooter'}, .#{containerClass} .#{cssClass 'thisFooter'} div { text-align:center; }\n              \"\"\"\n            @div class:cssClass('thisFooter'), opts, ->\n              @style \"\"\"\n                .#{containerClass} div.#{cssClass 'thisFooter'} div.#{cssClass 'resultFooter'} {\n                  /* overflow:auto; */\n                  vertical-align: middle;\n                }\n                .#{containerClass} div.#{cssClass 'thisFooter'} div.#{cssClass 'resultDatum'} {\n                  text-align:initial;\n                  vertical-align:initial;\n                  display:inline-block;\n                }\n                \"\"\"\n              @div class:cssClass(\"resultFooter\"), style:\"display:none\", ->\n                @div class:cssClass(\"resultDatum\"), ->\n              @div class:cssClass(\"introFooter\"), ->\n                @b controller.pkgInfo.version\n                @span ->\n                  @span \": \"\n                  @i \"A Reflective Coffescript Console/Editor!\"\n                @printHtml \" &bull; \"\n                @a href:\"https://github.com/rev22/reflective-coffeescript\", \"Reflective Coffeescript\"";
+      x.coffee = "(withHtmlcup, { controller, text })@>\n        cssClass = (name)=> @cssClass name\n        homeEvent = (name)=> @homeEvent name\n        containerClass = cssClass 'container'\n        i = @\n        withHtmlcup.call @, -> i.coffeecharniaLayout\n          cssClass: containerClass\n          htmlcup: @\n          style: controller.inlineStyle()\n          innerStyle:\n            \"\"\"\n            .#{containerClass} pre { background:none; color:inherit; }\n            .#{containerClass} div, .#{containerClass} pre { padding: 0; margin:0; }\n            .#{containerClass} a { color: #ffb }\n            .#{containerClass} a:visited { color: #eec }\n            .#{containerClass} a:hover { color: white }\n            \"\"\"\n          minheight: \"7em\",\n          minwidth: \"60em\",\n          head: ->\n            @meta charset:\"utf-8\"\n            @style \"\"\"\n              .#{containerClass} { background:black; color: #ddd; }\n              .#{containerClass} a { color:#5af; }\n              .#{containerClass} a:visited { color:#49f; }\n              .#{containerClass} a:hover { color:#6cf; }\n              .#{containerClass} select, textarea { border: 1px solid #555; }\n              \"\"\"\n          header: (opts)->\n            @style \"\"\"\n                div.thisHeader, .thisHeader div { text-align:center; }\n                \"\"\"\n            @div opts, ->\n              @style \"\"\"\n                /* .#{containerClass} select { min-width:5em; max-width:30%; width:18em; } */\n                .#{containerClass} select, .#{containerClass} button { font-size:inherit; text-align:center;   }\n                .#{containerClass} .button { display:inline-block; }\n                .#{containerClass} button, .#{containerClass} .button, .#{containerClass} input, .#{containerClass} select:not(:focus):not(:hover) { color:white; background:black; }\n                /* select option:not(:checked) { color:red !important; background:black !important; } */\n                /* option:active, option[selected], option:checked, option:hover, option:focus { background:#248 !important; } */\n                .#{containerClass} button, .#{containerClass} .button { min-width:5%; font-size:220%; border: 2px outset grey; }\n                .#{containerClass} button:active, .#{containerClass} .button.button-on { border: 2px inset grey; background:#248; }\n                .#{containerClass} .button input[type=\"checkbox\"] { display:none; }\n                .#{containerClass} .arrow { font-weight:bold;  }\n                .#{containerClass} .editArea { height:100%;width:100%;box-sizing:border-box; }\n                \"\"\"\n          body: (opts)->\n              @style \"\"\"\n                .#{containerClass} textarea { background: black; color: #ddd; }\n                .#{containerClass} button { opacity: 0.22; }\n                .#{containerClass} button:hover, .#{containerClass} button:focus, .#{containerClass} button:active { opacity: 1; }\n                \"\"\"\n              @div style:\"font-size:12px;position:absolute;top:0;right:0;left:0;bottom:0;overflow:hidden\", ->\n                  px = 44;\n                  w = \"width:#{px}px;max-width:#{px}px;min-width:#{px}px\"\n                  i = 1\n                  @button class:cssClass(\"runButton\"),      style:\"#{w};right:0;top:0;position:absolute;z-index:1000000\", \"▶\"\n                  @button class:cssClass(\"enlargeButton\"),  style:\"#{w};right:#{px*(i++)}px;top:0;position:absolute;z-index:1000000\", \"⬜\"\n                  @button class:cssClass(\"dragButton\"),     style:\"#{w};right:#{px*(i++)}px;top:0;position:absolute;z-index:1000000\", \"⛶\"\n                  @button class:cssClass(\"shrinkButton\"),   style:\"#{w};right:#{px*(i++)}px;top:0;position:absolute;z-index:1000000\", \"▫\"\n                  @button class:cssClass(\"killButton\"),     style:\"#{w};right:#{px*(i++)}px;top:0;position:absolute;z-index:1000000\", \"⨯\"\n                  @textarea class:\"#{cssClass(\"coffeeArea\")} editArea\", (text ? \"# Welcome to CoffeeCharnia!\")\n                  ####\n                    # Press return twice after a statement to execute it!\n        \n                    \n          footer: (opts)->\n            @style \"\"\"\n              .#{containerClass} div.#{cssClass 'thisFooter'}, .#{containerClass} .#{cssClass 'thisFooter'} div { text-align:center; }\n              \"\"\"\n            @div class:cssClass('thisFooter'), opts, ->\n              @style \"\"\"\n                .#{containerClass} div.#{cssClass 'thisFooter'} div.#{cssClass 'resultFooter'} {\n                  /* overflow:auto; */\n                  vertical-align: middle;\n                }\n                .#{containerClass} div.#{cssClass 'thisFooter'} div.#{cssClass 'resultDatum'} {\n                  text-align:initial;\n                  vertical-align:initial;\n                  display:inline-block;\n                }\n                \"\"\"\n              @div class:cssClass(\"resultFooter\"), style:\"display:none\", ->\n                @div class:cssClass(\"resultDatum\"), ->\n              @div class:cssClass(\"introFooter\"), ->\n                @b controller.pkgInfo.version\n                @span ->\n                  @span \": \"\n                  @i \"A Reflective Coffescript Console/Editor!\"\n                @printHtml \" &bull; \"\n                @a href:\"https://github.com/rev22/reflective-coffeescript\", \"Reflective Coffeescript\"\n      ";
       return x;
     })(function(withHtmlcup, _arg) {
       var containerClass, controller, cssClass, homeEvent, i, text;

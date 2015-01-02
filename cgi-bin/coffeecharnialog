@@ -1,0 +1,12 @@
+#!/bin/bash
+
+echo "Content-type: application/json"
+# echo "Origin: localhost"
+echo "Access-Control-Allow-Origin: *"
+echo ""
+
+cat >/tmp/coffeecharnialog
+
+sudo -u rev /home/rev/bin/git-film /tmp/coffeecharnialog
+
+echo "1"

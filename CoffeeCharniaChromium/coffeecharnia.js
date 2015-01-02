@@ -3,12 +3,13 @@ var HtmlGizmo;
 
 window.coffeecharnia = {
   config: {
-    coffeescriptUrl: "coffee-script.js"
+    coffeescriptUrl: "coffee-script.js",
+    codeLogUrl: "http://localhost/cgi-bin/coffeecharnialog"
   },
   pkgInfo: {
-    version: "CoffeeCharnia 0.3.49",
+    version: "CoffeeCharnia 0.3.50",
     description: "Reflective CoffeeScript Console",
-    copyright: "Copyright (c) 2014 Michele Bini",
+    copyright: "Copyright (c) 2014, 2015 Michele Bini",
     license: "GPL3"
   },
   edit: (function(x) {
@@ -95,11 +96,160 @@ window.coffeecharnia = {
   })(function(s) {
     return "->" + ("\n" + s).replace(/\n/g, "\n  ");
   }),
-  evalCoffeescript: (function(x) {
-    x.coffee = "(x)@>\n      { target } = @\n      if target is @global\n        js = @libs.CoffeeScript.compile(@processSource(x), bare:true)\n        @eval js\n      else\n        js = @libs.CoffeeScript.compile(@processSourceIntoFunction(@processSource(x)), bare:true)\n        @eval(\"#{js}\").call(target ? @)\n                 \n  ";
+  codelogger: {
+    connection: null,
+    queue: [],
+    backoff: 100,
+    backoff_threshold: 400,
+    setTimeout: setTimeout,
+    clearTimeout: clearTimeout,
+    XMLHttpRequest: XMLHttpRequest,
+    getPostUrl: (function(x) {
+      x.coffee = "@> @charnia.config.codeLogUrl";
+      return x;
+    })(function() {
+      return this.charnia.config.codeLogUrl;
+    }),
+    log: (function(x) {
+      x.coffee = "(x)@>\n      @queue.push x\n      if @connection?\n        if @backoff > @backoff_threshold\n          @abort()\n        else\n          return\n      @ .> slowSaving then\n        setTimeout <. @\n        s = \n        @slowSavingTimeout = setTimeout(\n          =>\n            @slowSavingTimeout = null\n            slowSaving()\n          @slowSavingMs ? 3000\n        )\n      @runQueue()\n\n    ";
+      return x;
+    })(function(x) {
+      var s, setTimeout, slowSaving, _ref;
+      this.queue.push(x);
+      if (this.connection != null) {
+        if (this.backoff > this.backoff_threshold) {
+          this.abort();
+        } else {
+          return;
+        }
+      }
+      if (slowSaving = this.slowSaving) {
+        setTimeout = this.setTimeout;
+        s = this.slowSavingTimeout = setTimeout((function(_this) {
+          return function() {
+            _this.slowSavingTimeout = null;
+            return slowSaving();
+          };
+        })(this), (_ref = this.slowSavingMs) != null ? _ref : 3000);
+      }
+      return this.runQueue();
+    }),
+    runQueue: (function(x) {
+      x.coffee = "@>\n      # console <. @\n      # console.log \"running queue\"\n      @post\n        url: @getPostUrl()\n        \n        data: @queue[0]\n        \n        done: (status, response)=>\n          # console.log \"done #{status}\"\n          status = \"#{status}\"\n          queue <. @\n          again = 1\n          if status[0] is \"2\"\n            # console.log \"done ok\"\n            queue.shift()\n            @backoff = 100\n            unless queue.length\n              again = 0\n              @connection = null\n              slowSavingTimeout <. @ then\n                clearTimeout <. @\n                clearTimeout slowSavingTimeout\n              else\n                @slowSavingDone?()\n          if again\n            # console.log \"again\"\n            @backoff *= 1.5\n            setTimeout <. @\n            setTimeout (=> @runQueue()), @backoff\n\n        timeout: =>\n          # console.log \"timeout\"\n          @backoff *= 1.5\n          setTimeout <. @\n          setTimeout (=> @runQueue()), @backoff\n\n    ";
+      return x;
+    })(function() {
+      return this.post({
+        url: this.getPostUrl(),
+        data: this.queue[0],
+        done: (function(_this) {
+          return function(status, response) {
+            var again, clearTimeout, queue, setTimeout, slowSavingTimeout;
+            status = "" + status;
+            queue = _this.queue;
+            again = 1;
+            if (status[0] === "2") {
+              queue.shift();
+              _this.backoff = 100;
+              if (!queue.length) {
+                again = 0;
+                _this.connection = null;
+                if (slowSavingTimeout = _this.slowSavingTimeout) {
+                  clearTimeout = _this.clearTimeout;
+                  clearTimeout(slowSavingTimeout);
+                } else {
+                  if (typeof _this.slowSavingDone === "function") {
+                    _this.slowSavingDone();
+                  }
+                }
+              }
+            }
+            if (again) {
+              _this.backoff *= 1.5;
+              setTimeout = _this.setTimeout;
+              return setTimeout((function() {
+                return _this.runQueue();
+              }), _this.backoff);
+            }
+          };
+        })(this),
+        timeout: (function(_this) {
+          return function() {
+            var setTimeout;
+            _this.backoff *= 1.5;
+            setTimeout = _this.setTimeout;
+            return setTimeout((function() {
+              return _this.runQueue();
+            }), _this.backoff);
+          };
+        })(this)
+      });
+    }),
+    post: (function(x) {
+      x.coffee = "({ url, data, done, timeout })@>\n      # console <. @\n      r = new @XMLHttpRequest\n      r.open 'POST', url, true\n      r.setRequestHeader 'Content-Type', 'text/plain; charset=UTF-8'\n      # r.responseType = \"application/json\"\n      r.send data\n      readyStateDone = r.DONE\n      r.onreadystatechange = ->\n        # console.log [ @readyState, @status, @responseText, @response ]\n        return unless @readyState is readyStateDone\n        @onreadystatechange = null\n        if !done?\n          throw \"nulllll\"\n        done(@status, @response ? @responseText)\n      r.ontimeout = timeout\n      @connection = r\n\n    ";
+      return x;
+    })(function(_arg) {
+      var data, done, r, readyStateDone, timeout, url;
+      url = _arg.url, data = _arg.data, done = _arg.done, timeout = _arg.timeout;
+      r = new this.XMLHttpRequest;
+      r.open('POST', url, true);
+      r.setRequestHeader('Content-Type', 'text/plain; charset=UTF-8');
+      r.send(data);
+      readyStateDone = r.DONE;
+      r.onreadystatechange = function() {
+        var _ref;
+        if (this.readyState !== readyStateDone) {
+          return;
+        }
+        this.onreadystatechange = null;
+        if (done == null) {
+          throw "nulllll";
+        }
+        return done(this.status, (_ref = this.response) != null ? _ref : this.responseText);
+      };
+      r.ontimeout = timeout;
+      return this.connection = r;
+    }),
+    abort: (function(x) {
+      x.coffee = "@>\n      @ .> connection then\n        connection.abort()\n        @connection = null\n                 \n  ";
+      return x;
+    })(function() {
+      var connection;
+      if (connection = this.connection) {
+        connection.abort();
+        return this.connection = null;
+      }
+    })
+  },
+  runCode: (function(x) {
+    x.coffee = "(x)@>\n      if @config.codeLogUrl?\n        @codelogger.charnia = @\n        @codelogger.slowSaving = =>\n          @view.coffeecharniaConsole.appendChild do=>\n            slowSavingMessage = @lib.document.createElement \"div\"\n            slowSavingMessage.setAttribute \"style\", \"position:absolute;top:0;right:0;font-size:200%;background:red;color:black\"\n            slowSavingMessage.innerHTML = \"Slow saving...\"\n            @view .< slowSavingMessage\n            slowSavingMessage\n        @codelogger.slowSavingDone = =>\n          @view .> slowSavingMessage then\n            @view.coffeecharniaConsole.removeChild slowSavingMessage\n            delete @view.slowSavingMessage\n        @codelogger.log x\n      { target } = @\n      if target is @global\n        js = @libs.CoffeeScript.compile(@processSource(x), bare:true)\n        @eval js\n      else\n        js = @libs.CoffeeScript.compile(@processSourceIntoFunction(@processSource(x)), bare:true)\n        @eval(\"#{js}\").call(target ? @)\n                 \n  ";
     return x;
   })(function(x) {
     var js, target;
+    if (this.config.codeLogUrl != null) {
+      this.codelogger.charnia = this;
+      this.codelogger.slowSaving = (function(_this) {
+        return function() {
+          return _this.view.coffeecharniaConsole.appendChild((function() {
+            var slowSavingMessage;
+            slowSavingMessage = _this.lib.document.createElement("div");
+            slowSavingMessage.setAttribute("style", "position:absolute;top:0;right:0;font-size:200%;background:red;color:black");
+            slowSavingMessage.innerHTML = "Slow saving...";
+            _this.view.slowSavingMessage = slowSavingMessage;
+            return slowSavingMessage;
+          })());
+        };
+      })(this);
+      this.codelogger.slowSavingDone = (function(_this) {
+        return function() {
+          var slowSavingMessage;
+          if (slowSavingMessage = _this.view.slowSavingMessage) {
+            _this.view.coffeecharniaConsole.removeChild(slowSavingMessage);
+            return delete _this.view.slowSavingMessage;
+          }
+        };
+      })(this);
+      this.codelogger.log(x);
+    }
     target = this.target;
     if (target === this.global) {
       js = this.libs.CoffeeScript.compile(this.processSource(x), {
@@ -152,7 +302,7 @@ window.coffeecharnia = {
     })(this)), 0);
   }),
   runButtonClick: (function(x) {
-    x.coffee = "@>\n      x = @view.coffeeArea.value\n      isError = null\n      val = if true\n        @evalCoffeescript x catch error\n          isError = true\n          val = error.stack ? error?.toString() ? error ? \"Undefined error\"\n      else\n        @evalWithSourceMap x\n      { coffeecharniaConsole: console, introFooter, resultFooter, resultDatum } = @view\n      if val?\n        introFooter.setAttribute \"style\", \"display:none\"\n        # resultFooter.setAttribute \"style\", \"max-height:#{console.getBoundingClientRect().height / 2.6 | 0}px\"\n        resultFooter.setAttribute \"style\", \"\"\n        if isError\n          resultDatum.innerHTML = @preQuote val\n        else\n          resultDatum.innerHTML = @printVal val              \n      else\n        introFooter.setAttribute \"style\", \"\"\n        resultFooter.setAttribute \"style\", \"display:none\"\n        resultDatum.innerHTML = \"\"\n      (@aceEditor())? then\n        @recalculateTextareaSize()\n      else\n        { setTimeout } = @\n        if true\n          # Keep it Simple!\n          setTimeout (=> @view.coffeeArea.scrollTop += 999999), 0\n          return \n        fixUp = =>\n          area = @view.coffeeArea\n          area.focus()\n          (pos = area.selectionEnd)? then\n            pos--\n            area.setSelectionRange?(pos, pos)\n        setTimeout fixUp, 0\n  ";
+    x.coffee = "@>\n      x = @view.coffeeArea.value\n      isError = null\n      val = if true\n        @runCode x catch error\n          isError = true\n          val = error.stack ? error?.toString() ? error ? \"Undefined error\"\n      else\n        @evalWithSourceMap x\n      { coffeecharniaConsole: console, introFooter, resultFooter, resultDatum } = @view\n      if val?\n        introFooter.setAttribute \"style\", \"display:none\"\n        # resultFooter.setAttribute \"style\", \"max-height:#{console.getBoundingClientRect().height / 2.6 | 0}px\"\n        resultFooter.setAttribute \"style\", \"\"\n        if isError\n          resultDatum.innerHTML = @preQuote val\n        else\n          resultDatum.innerHTML = @printVal val              \n      else\n        introFooter.setAttribute \"style\", \"\"\n        resultFooter.setAttribute \"style\", \"display:none\"\n        resultDatum.innerHTML = \"\"\n      (@aceEditor())? then\n        @recalculateTextareaSize()\n      else\n        { setTimeout } = @\n        if true\n          # Keep it Simple!\n          setTimeout (=> @view.coffeeArea.scrollTop += 999999), 0\n          return \n        fixUp = =>\n          area = @view.coffeeArea\n          area.focus()\n          (pos = area.selectionEnd)? then\n            pos--\n            area.setSelectionRange?(pos, pos)\n        setTimeout fixUp, 0\n  ";
     return x;
   })(function() {
     var console, error, fixUp, introFooter, isError, resultDatum, resultFooter, setTimeout, val, x, _ref;
@@ -162,7 +312,7 @@ window.coffeecharnia = {
       var _ref, _ref1, _ref2;
       if (true) {
         try {
-          return this.evalCoffeescript(x);
+          return this.runCode(x);
         } catch (_error) {
           error = _error;
           isError = true;
@@ -629,10 +779,10 @@ window.coffeecharnia = {
         };
       }),
       print: (function(x) {
-        x.coffee = "(x, prev, depth = 0, ind = \"\")@>\n          p = arguments.callee\n          depth = depth + 1\n          print = (y)=> p.call @, y, { prev, x }, depth\n          clean = (x)->\n            if /^[(]([(@][^\\n]*)[)]$/.test x\n              x.substring(1, x.length - 1)\n            else\n              x\n          if x == null\n            ind + \"null\"\n          else if x == @global\n            ind + @globalName\n          else if x == undefined\n            ind + \"undefined\"\n          else\n            t = typeof x\n            if t is \"boolean\"\n              ind + if x then \"true\" else \"false\"\n            else if t is \"number\"\n              ind + @printNumber x\n            else if t is \"string\"\n              if x.length > 8 and /\\n/.test x\n                l = x.split(\"\\n\")\n                l = (x.replace /\\\"\\\"\\\"/g, '\\\"\\\"\\\"' for x in l)\n                l.unshift ind + '\"\"\"'\n                l.push     ind + '\"\"\"'\n                l.join(ind + \"\\n\")\n              else\n                ind + '\"' + x.replace(/[\\\"\\\\]/g, (x)-> \"\\\\#{x}\") + '\"'\n            else if t is \"function\"\n              ni = ind + \"  \"\n              if x.coffee?\n                # YAY a reflective function!!!\n                s = x.coffee\n                if depth is 1 or /\\n/.test s\n                  lines = s.split \"\\n\"\n                  if lines.length > 1\n                    if (mn = lines[1].match(/^[ \\t]+/))?\n                      mn = mn[0].length\n                      id = mn - ni.length\n                      if id > 0\n                        x = new @RegExp(\"[ \\\\t]{#{id}}\")\n                        lines = (line.replace x, \"\" for line in lines)\n                      else if id < 0\n                        ni = @Array(-id + 1).join(\" \")\n                        lines = (ni + line for line in lines)                \n                  lines.join(\"\\n\")\n                else\n                  ind + \"(\" + s + \")\"\n              else\n                ind + x.toString().replace(/\\n/g, '\\n' + ni)\n            else if (c = (do (p = prev, c = 1)-> (return c if p.x == x; p = p.prev; c++) while p?; 0))\n              # Report cyclic structures\n              \"<cycle-#{c}+#{depth - c - 1}>\"\n            else if t isnt \"object\"\n              # print object of odd type\n              \"<#{t}>\"\n            else if @Array.isArray x\n              if x.length is 0\n                \"[ ]\"\n              else\n                cl = 2\n                hasLines = false\n                xxxx = for xx in x\n                  break unless @newline()\n                  xx = print xx\n                  hasLines = true if /\\n/.test xx\n                  cl += 2 + xx.length\n                  xx\n                if not hasLines and depth * 2 + cl + 1 < @columns\n                  \"[ \" + xxxx.join(\", \") + \" ]\"\n                else\n                  ni = ind + \"  \"\n                  l = [ ind + \"[\" ]\n                  for xx in xxxx\n                    l.push ni + clean(xx).replace(/\\n/g, '\\n' + ni)\n                  l.push ind + \"]\"\n                  l.join \"\\n\"\n            else\n              l = [ ]\n              @window?.document?   and   x.id?   and   typeof x.id is \"string\"   and   x is @window.document.getElementById x.id   then\n                return \"#{ind}window.document.getElementById '#{ x.id.replace(/\\'/, \"\\\\'\") }'\"\n              @symbolicPackages and depth > 1 and (packageVersion = x.pkgInfo?.version)? then\n                return ind + \"dynmodArchive.load '\" + packageVersion.replace(/\\ .*/, \"\") + \"'\"\n              ind = \"\"\n              if x instanceof @Date\n                return \"new Date(\\\"#{x.toISOString()}\\\")\"\n              keys = (k for k of x)\n              if keys.length is 0\n                return \"{ }\"\n              unless (!prev? or typeof prev.x is \"object\" and !@Array.isArray prev.x)\n                l = [ \"do->\" ]\n                ind = \"  \"\n              ni = ind + \"  \"\n              # keys = (h)@> (x for x of h).sort()\n              kvFilter = @filter ? (-> true)\n              for k in keys\n                break unless @newline()\n                v = x[k]\n                if !kvFilter(k,v)\n                  l.push \"#{ind}# #{k}: <#{typeof v}>\"\n                else if @global[k] is v\n                  # l.push ind + k + \": eval \" + \"'\" + k + \"'\"\n                  l.push \"#{ind}#{k}: #{@globalName}.#{k}\"\n                else\n                  v = clean(print v).replace(/\\n/g, '\\n' + ni)\n                  if !/\\n/.test(v) and  ind.length + k.toString().length + 2 + v.length < @columns\n                    l.push ind + k + \": \" + v\n                  else\n                    l.push ind + k + \":\"\n                    l.push ni + v\n              if l.length\n                l.join \"\\n\"\n              else\n                \"{ }\"\n      ";
+        x.coffee = "(x, prev, depth = 0, ind = \"\")@>\n          p = arguments.callee\n          depth = depth + 1\n          print = (y)=> p.call @, y, { prev, x }, depth\n          clean = (x)->\n            if /^[(]([(@][^\\n]*)[)]$/.test x\n              x.substring(1, x.length - 1)\n            else\n              x\n          if x == null\n            ind + \"null\"\n          else if x == @global\n            ind + @globalName\n          else if x == undefined\n            ind + \"undefined\"\n          else\n            t = typeof x\n            if t is \"boolean\"\n              ind + if x then \"true\" else \"false\"\n            else if t is \"number\"\n              ind + @printNumber x\n            else if t is \"string\"\n              if x.length > 8 and /\\n/.test x\n                l = x.split(\"\\n\")\n                l = (x.replace /\\\"\\\"\\\"/g, '\\\"\\\"\\\"' for x in l)\n                l.unshift ind + '\"\"\"'\n                l.push     ind + '\"\"\"'\n                l.join(ind + \"\\n\")\n              else\n                ind + '\"' + x.replace(/[\\\"\\\\]/g, (x)-> \"\\\\#{x}\") + '\"'\n            else if t is \"function\"\n              ni = ind + \"  \"\n              if x.coffee?\n                # YAY a reflective function!!!\n                s = x.coffee\n                if depth is 1 or /\\n/.test s\n                  lines = s.split \"\\n\"\n                  if lines.length > 1\n                    if (mn = lines[1].match(/^[ \\t]+/))?\n                      mn = mn[0].length\n                      id = mn - ni.length\n                      if id > 0\n                        x = new @RegExp(\"[ \\\\t]{#{id}}\")\n                        lines = (line.replace x, \"\" for line in lines)\n                      else if id < 0\n                        ni = @Array(-id + 1).join(\" \")\n                        lines = (ni + line for line in lines)                \n                  lines.join(\"\\n\")\n                else\n                  ind + \"(\" + s + \")\"\n              else\n                ind + x.toString().replace(/\\n/g, '\\n' + ni)\n            else if (c = (do (p = prev, c = 1)-> (return c if p.x == x; p = p.prev; c++) while p?; 0))\n              # Report cyclic structures\n              \"<cycle-#{c}+#{depth - c - 1}>\"\n            else if t isnt \"object\"\n              # print object of odd type\n              \"<#{t}>\"\n            else if @Array.isArray x\n              if x.length is 0\n                \"[ ]\"\n              else\n                cl = 2\n                hasLines = false\n                xxxx = for xx in x\n                  break unless @newline()\n                  xx = print xx\n                  hasLines = true if /\\n/.test xx\n                  cl += 2 + xx.length\n                  xx\n                if not hasLines and depth * 2 + cl + 1 < @columns\n                  \"[ \" + xxxx.join(\", \") + \" ]\"\n                else\n                  ni = ind + \"  \"\n                  l = [ ind + \"[\" ]\n                  for xx in xxxx\n                    l.push ni + clean(xx).replace(/\\n/g, '\\n' + ni)\n                  l.push ind + \"]\"\n                  l.join \"\\n\"\n            else\n              l = [ ]\n              @window?.document?   and   x.id?   and   typeof x.id is \"string\"   and   x is @window.document.getElementById x.id   then\n                return \"#{ind}window.document.getElementById '#{ x.id.replace(/\\'/, \"\\\\'\") }'\"\n              @symbolicPackages and depth > 1 and (packageVersion = x.pkgInfo?.version)? then\n                return ind + \"dynmodArchive.load '\" + packageVersion.replace(/\\ .*/, \"\") + \"'\"\n              ind = \"\"\n              if x instanceof @Date\n                return \"new Date(\\\"#{x.toISOString()}\\\")\"\n              keys = (k for k of x)\n              if keys.length is 0\n                return \"{ }\"\n              unless (!prev? or typeof prev.x is \"object\" and !@Array.isArray prev.x)\n                l = [ \"do->\" ]\n                ind = \"  \"\n              ni = ind + \"  \"\n              # keys = (h)@> (x for x of h).sort()\n              kvFilter = @filter ? (-> true)\n              for k in keys\n                break unless @newline()\n                verr = null\n                v = x[k] catch error\n                  verr = error.toString()\n                if verr?\n                  verr = \"Error:#{verr}\" unless /^[Ee]rror:/.test verr\n                  l.push \"#{ind}# #{k}: <#{verr}>\"\n                else if !kvFilter(k,v)\n                  l.push \"#{ind}# #{k}: <#{typeof v}>\"\n                else if @global[k] is v\n                  # l.push ind + k + \": eval \" + \"'\" + k + \"'\"\n                  l.push \"#{ind}#{k}: #{@globalName}.#{k}\"\n                else\n                  v = clean(print v).replace(/\\n/g, '\\n' + ni)\n                  if !/\\n/.test(v) and  ind.length + k.toString().length + 2 + v.length < @columns\n                    l.push ind + k + \": \" + v\n                  else\n                    l.push ind + k + \":\"\n                    l.push ni + v\n              if l.length\n                l.join \"\\n\"\n              else\n                \"{ }\"\n      ";
         return x;
       })(function(x, prev, depth, ind) {
-        var c, cl, clean, hasLines, id, k, keys, kvFilter, l, line, lines, mn, ni, p, packageVersion, print, s, t, v, xx, xxxx, _i, _j, _len, _len1, _ref, _ref1, _ref2;
+        var c, cl, clean, error, hasLines, id, k, keys, kvFilter, l, line, lines, mn, ni, p, packageVersion, print, s, t, v, verr, xx, xxxx, _i, _j, _len, _len1, _ref, _ref1, _ref2;
         if (depth == null) {
           depth = 0;
         }
@@ -815,8 +965,19 @@ window.coffeecharnia = {
               if (!this.newline()) {
                 break;
               }
-              v = x[k];
-              if (!kvFilter(k, v)) {
+              verr = null;
+              try {
+                v = x[k];
+              } catch (_error) {
+                error = _error;
+                verr = error.toString();
+              }
+              if (verr != null) {
+                if (!/^[Ee]rror:/.test(verr)) {
+                  verr = "Error:" + verr;
+                }
+                l.push("" + ind + "# " + k + ": <" + verr + ">");
+              } else if (!kvFilter(k, v)) {
                 l.push("" + ind + "# " + k + ": <" + (typeof v) + ">");
               } else if (this.global[k] === v) {
                 l.push("" + ind + k + ": " + this.globalName + "." + k);

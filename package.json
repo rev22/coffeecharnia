@@ -1,6 +1,6 @@
 {
   "name": "coffeecharnia",
-  "version": "0.1",
+  "version": "0.3.50",
   "author": "Michele Bini <michele.bini@gmail.com>",
   "devDependencies": {
     "coffeemake":"*",

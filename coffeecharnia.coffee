@@ -1,10 +1,11 @@
 window.coffeecharnia =
   config:
-    coffeescriptUrl: "coffee-script.js" # "lib/coffee-script.js"        
+    coffeescriptUrl: "coffee-script.js" # "lib/coffee-script.js"
+    codeLogUrl: "http://localhost/cgi-bin/coffeecharnialog"
   pkgInfo:
-    version: "CoffeeCharnia 0.3.49"
+    version: "CoffeeCharnia 0.3.50"
     description: "Reflective CoffeeScript Console"
-    copyright: "Copyright (c) 2014 Michele Bini"
+    copyright: "Copyright (c) 2014, 2015 Michele Bini"
     license: "GPL3"
 
   edit: (target, options)@>
@@ -37,8 +38,114 @@ window.coffeecharnia =
      
   processSource: (s)@> s
   processSourceIntoFunction: (s)@> ("->") + ("\n" + s).replace(/\n/g, "\n  ")
+
+  codelogger:
+
+    connection: null
+    queue: [ ]
+    backoff: 100
+    backoff_threshold: 400
+
+    setTimeout: setTimeout
+    clearTimeout: clearTimeout
+    XMLHttpRequest: XMLHttpRequest
+    # console: console
+
+    getPostUrl: @> @charnia.config.codeLogUrl
+
+    log: (x)@>
+      @queue.push x
+      if @connection?
+        if @backoff > @backoff_threshold
+          @abort()
+        else
+          return
+      @ .> slowSaving then
+        setTimeout <. @
+        s = 
+        @slowSavingTimeout = setTimeout(
+          =>
+            @slowSavingTimeout = null
+            slowSaving()
+          @slowSavingMs ? 3000
+        )
+      @runQueue()
+
+    runQueue: @>
+      # console <. @
+      # console.log "running queue"
+      @post
+        url: @getPostUrl()
+        
+        data: @queue[0]
+        
+        done: (status, response)=>
+          # console.log "done #{status}"
+          status = "#{status}"
+          queue <. @
+          again = 1
+          if status[0] is "2"
+            # console.log "done ok"
+            queue.shift()
+            @backoff = 100
+            unless queue.length
+              again = 0
+              @connection = null
+              slowSavingTimeout <. @ then
+                clearTimeout <. @
+                clearTimeout slowSavingTimeout
+              else
+                @slowSavingDone?()
+          if again
+            # console.log "again"
+            @backoff *= 1.5
+            setTimeout <. @
+            setTimeout (=> @runQueue()), @backoff
+
+        timeout: =>
+          # console.log "timeout"
+          @backoff *= 1.5
+          setTimeout <. @
+          setTimeout (=> @runQueue()), @backoff
+
+    post: ({ url, data, done, timeout })@>
+      # console <. @
+      r = new @XMLHttpRequest
+      r.open 'POST', url, true
+      r.setRequestHeader 'Content-Type', 'text/plain; charset=UTF-8'
+      # r.responseType = "application/json"
+      r.send data
+      readyStateDone = r.DONE
+      r.onreadystatechange = ->
+        # console.log [ @readyState, @status, @responseText, @response ]
+        return unless @readyState is readyStateDone
+        @onreadystatechange = null
+        if !done?
+          throw "nulllll"
+        done(@status, @response ? @responseText)
+      r.ontimeout = timeout
+      @connection = r
+
+    abort: @>
+      @ .> connection then
+        connection.abort()
+        @connection = null
                  
-  evalCoffeescript: (x)@>
+  runCode: (x)@>
+      if @config.codeLogUrl?
+        @codelogger.charnia = @
+        @codelogger.slowSaving = =>
+          @view.coffeecharniaConsole.appendChild do=>
+            slowSavingMessage = @lib.document.createElement "div"
+            slowSavingMessage.setAttribute "style", "position:absolute;top:0;right:0;font-size:200%;background:red;color:black"
+            slowSavingMessage.innerHTML = "Slow saving..."
+            @view .< slowSavingMessage
+            slowSavingMessage
+        @codelogger.slowSavingDone = =>
+          @view .> slowSavingMessage then
+            @view.coffeecharniaConsole.removeChild slowSavingMessage
+            delete @view.slowSavingMessage
+        @codelogger.log x
       { target } = @
       if target is @global
         js = @libs.CoffeeScript.compile(@processSource(x), bare:true)
@@ -71,7 +178,7 @@ window.coffeecharnia =
       x = @view.coffeeArea.value
       isError = null
       val = if true
-        @evalCoffeescript x catch error
+        @runCode x catch error
           isError = true
           val = error.stack ? error?.toString() ? error ? "Undefined error"
       else
@@ -433,8 +540,13 @@ window.coffeecharnia =
               kvFilter = @filter ? (-> true)
               for k in keys
                 break unless @newline()
-                v = x[k]
-                if !kvFilter(k,v)
+                verr = null
+                v = x[k] catch error
+                  verr = error.toString()
+                if verr?
+                  verr = "Error:#{verr}" unless /^[Ee]rror:/.test verr
+                  l.push "#{ind}# #{k}: <#{verr}>"
+                else if !kvFilter(k,v)
                   l.push "#{ind}# #{k}: <#{typeof v}>"
                 else if @global[k] is v
                   # l.push ind + k + ": eval " + "'" + k + "'"
