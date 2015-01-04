@@ -13,6 +13,7 @@ window.coffeecharnia =
     # Edit only reflective methods and constants by default
     filter ?= (k,v)-> (typeof v is 'function' and v.coffee?) or (typeof v in [ 'boolean', 'number', 'string']) or v is null
     text = @lib.DynmodPrinter.withFilter(filter).limitLines(5000).print(target)
+    text = "do =>\n#{text}".replace(/\n/g, "\n    ")
     @spawn { target, text }
 
   exit: @>

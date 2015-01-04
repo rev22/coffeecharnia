@@ -13,7 +13,7 @@ window.coffeecharnia = {
     license: "GPL3"
   },
   edit: (function(x) {
-    x.coffee = "(target, options)@>\n    { filter } = options if options?\n    # Edit only reflective methods and constants by default\n    filter ?= (k,v)-> (typeof v is 'function' and v.coffee?) or (typeof v in [ 'boolean', 'number', 'string']) or v is null\n    text = @lib.DynmodPrinter.withFilter(filter).limitLines(5000).print(target)\n    @spawn { target, text }\n\n  ";
+    x.coffee = "(target, options)@>\n    { filter } = options if options?\n    # Edit only reflective methods and constants by default\n    filter ?= (k,v)-> (typeof v is 'function' and v.coffee?) or (typeof v in [ 'boolean', 'number', 'string']) or v is null\n    text = @lib.DynmodPrinter.withFilter(filter).limitLines(5000).print(target)\n    text = \"do =>\\n#{text}\".replace(/\\n/g, \"\\n    \")\n    @spawn { target, text }\n\n  ";
     return x;
   })(function(target, options) {
     var filter, text;
@@ -27,6 +27,7 @@ window.coffeecharnia = {
       };
     }
     text = this.lib.DynmodPrinter.withFilter(filter).limitLines(5000).print(target);
+    text = ("do =>\n" + text).replace(/\n/g, "\n    ");
     return this.spawn({
       target: target,
       text: text
