@@ -231,6 +231,155 @@ window.coffeecharnia =
             pos--
             area.setSelectionRange?(pos, pos)
         setTimeout fixUp, 0
+        
+  aceThemeMerblue: @>
+    id = "ace-merblue"
+    document <. @lib
+    document.getElementById(id) or document.head.appendChild do->
+      e = document.createElement "style"
+      e .< id
+      e.innerHTML =
+        ''''
+        
+        .ace-merblue .ace_gutter {
+          background: #002;
+          color: #9ff;
+        }
+        
+        .ace-merblue .ace_print-margin {
+          width: 1px;
+          background: #023;
+        }
+        
+        .ace-merblue .ace_scroller {
+           background-color: #000005;
+        }
+        
+        .ace-merblue .ace_text-layer {
+           color: #ddd;
+        }
+        
+        .ace-merblue .ace_cursor {
+           border-left: 2px solid #fdf;
+        }
+        
+        .ace-merblue .ace_overwrite-cursors .ace_cursor {
+          border-left: 0px;
+          border-bottom: 1px solid #fff;
+        }
+        
+        .ace-merblue .ace_marker-layer .ace_selection {
+           background: #444;
+        }
+        
+        .ace-merblue.ace_multiselect .ace_selection.ace_start {
+          box-shadow: 0 0 3px 0px #111;
+          border-radius: 2px;
+        }
+        
+        .ace-merblue .ace_marker-layer .ace_step {
+           background: rgb(102, 82, 0);
+        }
+        
+        .ace-merblue .ace_marker-layer .ace_bracket {
+          margin: -1px 0 0 -1px;
+          border: 1px solid #444;
+        }
+        
+        .ace-merblue .ace_marker-layer .ace_active-line {
+          background: #000015;
+        }
+        
+        .ace-merblue .ace_gutter-active-line {
+          background-color: #345;
+        }
+        
+        .ace-merblue .ace_marker-layer .ace_selected-word {
+          border: 1px solid #444;
+        }
+        
+        .ace-merblue .ace_invisible {
+          color: #333;
+        }
+        
+        .ace-merblue .ace_entity.ace_name.ace_tag,
+        .ace-merblue .ace_keyword,
+        .ace-merblue .ace_meta,
+        .ace-merblue .ace_meta.ace_tag,
+        .ace-merblue .ace_storage,
+        .ace-merblue .ace_support.ace_function {
+          color: #0ff;
+        }
+        
+        .ace-merblue .ace_constant,
+        .ace-merblue .ace_constant.ace_character,
+        .ace-merblue .ace_constant.ace_character.ace_escape,
+        .ace-merblue .ace_constant.ace_other,
+        .ace-merblue .ace_support.ace_type {
+          color: #5ee;
+        }
+        
+        .ace-merblue .ace_constant.ace_character.ace_escape {
+          color: #e5e;
+        }
+        
+        .ace-merblue .ace_constant.ace_language {
+          color: #09d;
+        }
+
+        .ace-merblue .ace_variable {
+          color: #9dc;
+        }
+
+        .ace-merblue .ace_variable.ace_parameter {
+          color: #5da;
+        }
+
+        .ace-merblue .ace_variable.ace_language {
+          color: #3da;
+        }
+                
+        
+        .ace-merblue .ace_constant.ace_library,
+        .ace-merblue .ace_string,
+        .ace-merblue .ace_support.ace_constant {
+          color: #b5d;
+        }
+        
+        .ace-merblue .ace_constant.ace_numeric {
+          color: #3ee;
+        }
+        
+        .ace-merblue .ace_invalid {
+          color: #FFF;
+          background-color: #900;
+        }
+        
+        .ace-merblue .ace_fold {
+          background-color: #002;
+          border-color: #00f;
+        }
+        
+        .ace-merblue .ace_comment {
+          font-style: italic;
+          color: #e93;
+        }
+        
+        .ace-merblue .ace_entity.ace_other.ace_attribute-name {
+          color: #ff8;
+        }
+        
+        .ace-merblue .ace_markup.ace_underline {
+          text-decoration: underline;
+        }
+        
+        .ace-merblue .ace_indent-guide {
+          background: #101;
+        }
+
+      e
+    cssClass: id
+        
   setup: @>
       # @fs.readFileSync = (x)=> @readFileSync(x)
       # @fs.writeFileSync = (x)=> @readFileSync(x)
@@ -249,7 +398,8 @@ window.coffeecharnia =
         area.transformed = editor
         app.aceRefcoffeeMode (mode)->
           editor.getSession().setMode(mode)
-        editor.setTheme("ace/theme/merbivore")
+        
+        editor.setTheme app.aceThemeMerblue()
       @getElement().onkeydown = (event)->
         return app.handleEnterKey?(event) if event.keyCode and event.keyCode is 13
         true
