@@ -21,18 +21,36 @@ window.coffeecharnia =
       el.parentNode.removeChild el
 
   exec: (x)@> x.call(@) finally @exit()
+
+  inlineStyle:
+    position: 'absolute'
+    overflow: 'auto'
+    background: 'black'
+    color: '#ddd'
+    'text-align': 'initial'
+    'font-size': '12px'
   
-  inlineStyle: @>
-     s = @sizePercentage ? 38
-     (g = @gravity)? then
-       [ x, y ] = g
-     else
-       x = y = 1
-     y = ([ (-> "top:0"),   (-> "top:#{(100-s)/2}%"),   (-> "bottom:0")  ])[y]()
-     x = ([ (-> "left:0"),  (-> "left:#{(100-s)/2}%"),  (-> "right:0")   ])[x]()
-     g = "#{x};#{y}"
-     "position:absolute;overflow:auto;width:#{s}%;height:#{s}%;#{g};background:black;color:#ddd;text-align:initial;font-size:12px"
-   
+  getInlineStyle: @>
+    s = @sizePercentage ? 38
+    fix = (x)-> x.toFixed(2)
+    (g = @gravity)? then
+      [ x, y ] = g
+    else
+      x = y = 1
+    i = @inlineStyle
+    i.top = i.bottom = null
+    ([ (-> i.top = 0),   (-> i.top = "#{fix((100-s)/2)}%"),   (-> i.bottom = 0)  ])[y]()
+    i.right = i.left = null
+    ([ (-> i.left = 0),  (-> i.left = "#{fix((100-s)/2)}%"),  (-> i.right = 0)   ])[x]()
+    s = fix(s) + "%"
+    i.width   = s
+    i.height  = s
+    (for k,v of i
+      v? then "#{k}:#{v}" else continue
+    ).join ";"
+
+  setStyle: (k,v)@> @inlineStyle[k] = v; @updateInlineStyle()
+
   isConverting: false
     
   target: null # ? @
@@ -238,6 +256,8 @@ window.coffeecharnia =
   getElement: @> @view.coffeecharniaConsole
   
   killButtonClick: @> @exit()
+
+  updateInlineStyle: @> @getElement().setAttribute('style', @getInlineStyle())
   
   shrinkButtonClick: @>
       el = @getElement()
@@ -246,7 +266,7 @@ window.coffeecharnia =
       s = s / (1 + 0.05 + (1 - s) / 5)
       s = 0.1 if s < 0.1
       @sizePercentage = s * 100
-      el.setAttribute('style', @inlineStyle())
+      @updateInlineStyle()
       @recalculateTextareaSize()
   
   dragButtonUp: (ev,el)@>
@@ -257,7 +277,7 @@ window.coffeecharnia =
      y < 0 then y = 0 else y > 3 then y = 3
      @gravity = [ x, y ]
      el = @getElement()
-     el.setAttribute('style', @inlineStyle())
+     @updateInlineStyle()
      @recalculateTextareaSize()              
        
   enlargeButtonClick: @>
@@ -267,7 +287,7 @@ window.coffeecharnia =
      s = s * (1 + 0.05 + (1 - s)/5)
      s = 1 if s > 1
      @sizePercentage = s * 100
-     el.setAttribute('style', @inlineStyle())
+     @updateInlineStyle()
      @recalculateTextareaSize()
    
   hideButtonClick: @>
@@ -855,7 +875,7 @@ window.coffeecharnia =
         withHtmlcup.call @, -> i.coffeecharniaLayout
           cssClass: containerClass
           htmlcup: @
-          style: controller.inlineStyle()
+          style: controller.getInlineStyle()
           innerStyle:
             """
             .#{containerClass} pre { background:none; color:inherit; }

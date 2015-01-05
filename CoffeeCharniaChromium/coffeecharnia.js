@@ -51,37 +51,72 @@ window.coffeecharnia = {
       this.exit();
     }
   }),
-  inlineStyle: (function(x) {
-    x.coffee = "@>\n     s = @sizePercentage ? 38\n     (g = @gravity)? then\n       [ x, y ] = g\n     else\n       x = y = 1\n     y = ([ (-> \"top:0\"),   (-> \"top:#{(100-s)/2}%\"),   (-> \"bottom:0\")  ])[y]()\n     x = ([ (-> \"left:0\"),  (-> \"left:#{(100-s)/2}%\"),  (-> \"right:0\")   ])[x]()\n     g = \"#{x};#{y}\"\n     \"position:absolute;overflow:auto;width:#{s}%;height:#{s}%;#{g};background:black;color:#ddd;text-align:initial;font-size:12px\"\n   \n  ";
+  inlineStyle: {
+    position: 'absolute',
+    overflow: 'auto',
+    background: 'black',
+    color: '#ddd',
+    'text-align': 'initial',
+    'font-size': '12px'
+  },
+  getInlineStyle: (function(x) {
+    x.coffee = "@>\n    s = @sizePercentage ? 38\n    fix = (x)-> x.toFixed(2)\n    (g = @gravity)? then\n      [ x, y ] = g\n    else\n      x = y = 1\n    i = @inlineStyle\n    i.top = i.bottom = null\n    ([ (-> i.top = 0),   (-> i.top = \"#{fix((100-s)/2)}%\"),   (-> i.bottom = 0)  ])[y]()\n    i.right = i.left = null\n    ([ (-> i.left = 0),  (-> i.left = \"#{fix((100-s)/2)}%\"),  (-> i.right = 0)   ])[x]()\n    s = fix(s) + \"%\"\n    i.width   = s\n    i.height  = s\n    (for k,v of i\n      v? then \"#{k}:#{v}\" else continue\n    ).join \";\"\n\n  ";
     return x;
   })(function() {
-    var g, s, x, y, _ref;
+    var fix, g, i, k, s, v, x, y, _ref;
     s = (_ref = this.sizePercentage) != null ? _ref : 38;
+    fix = function(x) {
+      return x.toFixed(2);
+    };
     if ((g = this.gravity) != null) {
       x = g[0], y = g[1];
     } else {
       x = y = 1;
     }
-    y = [
+    i = this.inlineStyle;
+    i.top = i.bottom = null;
+    [
       (function() {
-        return "top:0";
+        return i.top = 0;
       }), (function() {
-        return "top:" + ((100 - s) / 2) + "%";
+        return i.top = "" + (fix((100 - s) / 2)) + "%";
       }), (function() {
-        return "bottom:0";
+        return i.bottom = 0;
       })
     ][y]();
-    x = [
+    i.right = i.left = null;
+    [
       (function() {
-        return "left:0";
+        return i.left = 0;
       }), (function() {
-        return "left:" + ((100 - s) / 2) + "%";
+        return i.left = "" + (fix((100 - s) / 2)) + "%";
       }), (function() {
-        return "right:0";
+        return i.right = 0;
       })
     ][x]();
-    g = "" + x + ";" + y;
-    return "position:absolute;overflow:auto;width:" + s + "%;height:" + s + "%;" + g + ";background:black;color:#ddd;text-align:initial;font-size:12px";
+    s = fix(s) + "%";
+    i.width = s;
+    i.height = s;
+    return ((function() {
+      var _results;
+      _results = [];
+      for (k in i) {
+        v = i[k];
+        if (v != null) {
+          _results.push("" + k + ":" + v);
+        } else {
+          continue;
+        }
+      }
+      return _results;
+    })()).join(";");
+  }),
+  setStyle: (function(x) {
+    x.coffee = "(k,v)@> @inlineStyle[k] = v; @updateInlineStyle()";
+    return x;
+  })(function(k, v) {
+    this.inlineStyle[k] = v;
+    return this.updateInlineStyle();
   }),
   isConverting: false,
   target: null,
@@ -425,8 +460,14 @@ window.coffeecharnia = {
   })(function() {
     return this.exit();
   }),
+  updateInlineStyle: (function(x) {
+    x.coffee = "@> @getElement().setAttribute('style', @getInlineStyle())";
+    return x;
+  })(function() {
+    return this.getElement().setAttribute('style', this.getInlineStyle());
+  }),
   shrinkButtonClick: (function(x) {
-    x.coffee = "@>\n      el = @getElement()\n      s = @sizePercentage ? 38\n      s = s / 100.0\n      s = s / (1 + 0.05 + (1 - s) / 5)\n      s = 0.1 if s < 0.1\n      @sizePercentage = s * 100\n      el.setAttribute('style', @inlineStyle())\n      @recalculateTextareaSize()\n  \n  ";
+    x.coffee = "@>\n      el = @getElement()\n      s = @sizePercentage ? 38\n      s = s / 100.0\n      s = s / (1 + 0.05 + (1 - s) / 5)\n      s = 0.1 if s < 0.1\n      @sizePercentage = s * 100\n      @updateInlineStyle()\n      @recalculateTextareaSize()\n  \n  ";
     return x;
   })(function() {
     var el, s, _ref;
@@ -438,11 +479,11 @@ window.coffeecharnia = {
       s = 0.1;
     }
     this.sizePercentage = s * 100;
-    el.setAttribute('style', this.inlineStyle());
+    this.updateInlineStyle();
     return this.recalculateTextareaSize();
   }),
   dragButtonUp: (function(x) {
-    x.coffee = "(ev,el)@>\n     r = el.getClientRects()[0]\n     x = (((ev.clientX - r.left) / r.width) * 3)|0\n     y = (((ev.clientY - r.top) / r.height) * 3)|0\n     x < 0 then x = 0 else x > 3 then x = 3\n     y < 0 then y = 0 else y > 3 then y = 3\n     @gravity = [ x, y ]\n     el = @getElement()\n     el.setAttribute('style', @inlineStyle())\n     @recalculateTextareaSize()              \n       \n  ";
+    x.coffee = "(ev,el)@>\n     r = el.getClientRects()[0]\n     x = (((ev.clientX - r.left) / r.width) * 3)|0\n     y = (((ev.clientY - r.top) / r.height) * 3)|0\n     x < 0 then x = 0 else x > 3 then x = 3\n     y < 0 then y = 0 else y > 3 then y = 3\n     @gravity = [ x, y ]\n     el = @getElement()\n     @updateInlineStyle()\n     @recalculateTextareaSize()              \n       \n  ";
     return x;
   })(function(ev, el) {
     var r, x, y;
@@ -461,11 +502,11 @@ window.coffeecharnia = {
     }
     this.gravity = [x, y];
     el = this.getElement();
-    el.setAttribute('style', this.inlineStyle());
+    this.updateInlineStyle();
     return this.recalculateTextareaSize();
   }),
   enlargeButtonClick: (function(x) {
-    x.coffee = "@>\n     el = @getElement()\n     s = @sizePercentage ? 38\n     s = s / 100.0\n     s = s * (1 + 0.05 + (1 - s)/5)\n     s = 1 if s > 1\n     @sizePercentage = s * 100\n     el.setAttribute('style', @inlineStyle())\n     @recalculateTextareaSize()\n   \n  ";
+    x.coffee = "@>\n     el = @getElement()\n     s = @sizePercentage ? 38\n     s = s / 100.0\n     s = s * (1 + 0.05 + (1 - s)/5)\n     s = 1 if s > 1\n     @sizePercentage = s * 100\n     @updateInlineStyle()\n     @recalculateTextareaSize()\n   \n  ";
     return x;
   })(function() {
     var el, s, _ref;
@@ -477,7 +518,7 @@ window.coffeecharnia = {
       s = 1;
     }
     this.sizePercentage = s * 100;
-    el.setAttribute('style', this.inlineStyle());
+    this.updateInlineStyle();
     return this.recalculateTextareaSize();
   }),
   hideButtonClick: (function(x) {
@@ -1515,7 +1556,7 @@ window.coffeecharnia = {
     }),
     cssPrefix: "coffeecharnia_",
     make: (function(x) {
-      x.coffee = "(withHtmlcup, { controller, text })@>\n        cssClass = (name)=> @cssClass name\n        homeEvent = (name)=> @homeEvent name\n        containerClass = cssClass 'container'\n        i = @\n        withHtmlcup.call @, -> i.coffeecharniaLayout\n          cssClass: containerClass\n          htmlcup: @\n          style: controller.inlineStyle()\n          innerStyle:\n            \"\"\"\n            .#{containerClass} pre { background:none; color:inherit; }\n            .#{containerClass} div, .#{containerClass} pre { padding: 0; margin:0; }\n            .#{containerClass} a { color: #ffb }\n            .#{containerClass} a:visited { color: #eec }\n            .#{containerClass} a:hover { color: white }\n            \"\"\"\n          minheight: \"7em\",\n          minwidth: \"60em\",\n          head: ->\n            @meta charset:\"utf-8\"\n            @style \"\"\"\n              .#{containerClass} { background:black; color: #ddd; }\n              .#{containerClass} a { color:#5af; }\n              .#{containerClass} a:visited { color:#49f; }\n              .#{containerClass} a:hover { color:#6cf; }\n              .#{containerClass} select, textarea { border: 1px solid #555; }\n              \"\"\"\n          header: (opts)->\n            @style \"\"\"\n                div.thisHeader, .thisHeader div { text-align:center; }\n                \"\"\"\n            @div opts, ->\n              @style \"\"\"\n                /* .#{containerClass} select { min-width:5em; max-width:30%; width:18em; } */\n                .#{containerClass} select, .#{containerClass} button { font-size:inherit; text-align:center;   }\n                .#{containerClass} .button { display:inline-block; }\n                .#{containerClass} button, .#{containerClass} .button, .#{containerClass} input, .#{containerClass} select:not(:focus):not(:hover) { color:white; background:black; }\n                /* select option:not(:checked) { color:red !important; background:black !important; } */\n                /* option:active, option[selected], option:checked, option:hover, option:focus { background:#248 !important; } */\n                .#{containerClass} button, .#{containerClass} .button { min-width:5%; font-size:220%; border: 2px outset grey; }\n                .#{containerClass} button:active, .#{containerClass} .button.button-on { border: 2px inset grey; background:#248; }\n                .#{containerClass} .button input[type=\"checkbox\"] { display:none; }\n                .#{containerClass} .arrow { font-weight:bold;  }\n                .#{containerClass} .editArea { height:100%;width:100%;box-sizing:border-box; }\n                \"\"\"\n          body: (opts)->\n              @style \"\"\"\n                .#{containerClass} textarea { background: black; color: #ddd; }\n                .#{containerClass} button { opacity: 0.22; }\n                .#{containerClass} button:hover, .#{containerClass} button:focus, .#{containerClass} button:active { opacity: 1; }\n                \"\"\"\n              @div style:\"font-size:12px;position:absolute;top:0;right:0;left:0;bottom:0;overflow:hidden\", ->\n                  px = 44;\n                  w = \"width:#{px}px;max-width:#{px}px;min-width:#{px}px\"\n                  i = 1\n                  @button class:cssClass(\"runButton\"),      style:\"#{w};right:0;top:0;position:absolute;z-index:1000000\", \"▶\"\n                  @button class:cssClass(\"enlargeButton\"),  style:\"#{w};right:#{px*(i++)}px;top:0;position:absolute;z-index:1000000\", \"⬜\"\n                  @button class:cssClass(\"dragButton\"),     style:\"#{w};right:#{px*(i++)}px;top:0;position:absolute;z-index:1000000\", \"⛶\"\n                  @button class:cssClass(\"shrinkButton\"),   style:\"#{w};right:#{px*(i++)}px;top:0;position:absolute;z-index:1000000\", \"▫\"\n                  @button class:cssClass(\"killButton\"),     style:\"#{w};right:#{px*(i++)}px;top:0;position:absolute;z-index:1000000\", \"⨯\"\n                  @textarea class:\"#{cssClass(\"coffeeArea\")} editArea\", (text ? \"# Welcome to CoffeeCharnia!\")\n                  ####\n                    # Press return twice after a statement to execute it!\n        \n                    \n          footer: (opts)->\n            @style \"\"\"\n              .#{containerClass} div.#{cssClass 'thisFooter'}, .#{containerClass} .#{cssClass 'thisFooter'} div { text-align:center; }\n              \"\"\"\n            @div class:cssClass('thisFooter'), opts, ->\n              @style \"\"\"\n                .#{containerClass} div.#{cssClass 'thisFooter'} div.#{cssClass 'resultFooter'} {\n                  /* overflow:auto; */\n                  vertical-align: middle;\n                }\n                .#{containerClass} div.#{cssClass 'thisFooter'} div.#{cssClass 'resultDatum'} {\n                  text-align:initial;\n                  vertical-align:initial;\n                  display:inline-block;\n                }\n                \"\"\"\n              @div class:cssClass(\"resultFooter\"), style:\"display:none\", ->\n                @div class:cssClass(\"resultDatum\"), ->\n              @div class:cssClass(\"introFooter\"), ->\n                @b controller.pkgInfo.version\n                @span ->\n                  @span \": \"\n                  @i \"A Reflective Coffescript Console/Editor!\"\n                @printHtml \" &bull; \"\n                @a href:\"https://github.com/rev22/reflective-coffeescript\", \"Reflective Coffeescript\"\n      ";
+      x.coffee = "(withHtmlcup, { controller, text })@>\n        cssClass = (name)=> @cssClass name\n        homeEvent = (name)=> @homeEvent name\n        containerClass = cssClass 'container'\n        i = @\n        withHtmlcup.call @, -> i.coffeecharniaLayout\n          cssClass: containerClass\n          htmlcup: @\n          style: controller.getInlineStyle()\n          innerStyle:\n            \"\"\"\n            .#{containerClass} pre { background:none; color:inherit; }\n            .#{containerClass} div, .#{containerClass} pre { padding: 0; margin:0; }\n            .#{containerClass} a { color: #ffb }\n            .#{containerClass} a:visited { color: #eec }\n            .#{containerClass} a:hover { color: white }\n            \"\"\"\n          minheight: \"7em\",\n          minwidth: \"60em\",\n          head: ->\n            @meta charset:\"utf-8\"\n            @style \"\"\"\n              .#{containerClass} { background:black; color: #ddd; }\n              .#{containerClass} a { color:#5af; }\n              .#{containerClass} a:visited { color:#49f; }\n              .#{containerClass} a:hover { color:#6cf; }\n              .#{containerClass} select, textarea { border: 1px solid #555; }\n              \"\"\"\n          header: (opts)->\n            @style \"\"\"\n                div.thisHeader, .thisHeader div { text-align:center; }\n                \"\"\"\n            @div opts, ->\n              @style \"\"\"\n                /* .#{containerClass} select { min-width:5em; max-width:30%; width:18em; } */\n                .#{containerClass} select, .#{containerClass} button { font-size:inherit; text-align:center;   }\n                .#{containerClass} .button { display:inline-block; }\n                .#{containerClass} button, .#{containerClass} .button, .#{containerClass} input, .#{containerClass} select:not(:focus):not(:hover) { color:white; background:black; }\n                /* select option:not(:checked) { color:red !important; background:black !important; } */\n                /* option:active, option[selected], option:checked, option:hover, option:focus { background:#248 !important; } */\n                .#{containerClass} button, .#{containerClass} .button { min-width:5%; font-size:220%; border: 2px outset grey; }\n                .#{containerClass} button:active, .#{containerClass} .button.button-on { border: 2px inset grey; background:#248; }\n                .#{containerClass} .button input[type=\"checkbox\"] { display:none; }\n                .#{containerClass} .arrow { font-weight:bold;  }\n                .#{containerClass} .editArea { height:100%;width:100%;box-sizing:border-box; }\n                \"\"\"\n          body: (opts)->\n              @style \"\"\"\n                .#{containerClass} textarea { background: black; color: #ddd; }\n                .#{containerClass} button { opacity: 0.22; }\n                .#{containerClass} button:hover, .#{containerClass} button:focus, .#{containerClass} button:active { opacity: 1; }\n                \"\"\"\n              @div style:\"font-size:12px;position:absolute;top:0;right:0;left:0;bottom:0;overflow:hidden\", ->\n                  px = 44;\n                  w = \"width:#{px}px;max-width:#{px}px;min-width:#{px}px\"\n                  i = 1\n                  @button class:cssClass(\"runButton\"),      style:\"#{w};right:0;top:0;position:absolute;z-index:1000000\", \"▶\"\n                  @button class:cssClass(\"enlargeButton\"),  style:\"#{w};right:#{px*(i++)}px;top:0;position:absolute;z-index:1000000\", \"⬜\"\n                  @button class:cssClass(\"dragButton\"),     style:\"#{w};right:#{px*(i++)}px;top:0;position:absolute;z-index:1000000\", \"⛶\"\n                  @button class:cssClass(\"shrinkButton\"),   style:\"#{w};right:#{px*(i++)}px;top:0;position:absolute;z-index:1000000\", \"▫\"\n                  @button class:cssClass(\"killButton\"),     style:\"#{w};right:#{px*(i++)}px;top:0;position:absolute;z-index:1000000\", \"⨯\"\n                  @textarea class:\"#{cssClass(\"coffeeArea\")} editArea\", (text ? \"# Welcome to CoffeeCharnia!\")\n                  ####\n                    # Press return twice after a statement to execute it!\n        \n                    \n          footer: (opts)->\n            @style \"\"\"\n              .#{containerClass} div.#{cssClass 'thisFooter'}, .#{containerClass} .#{cssClass 'thisFooter'} div { text-align:center; }\n              \"\"\"\n            @div class:cssClass('thisFooter'), opts, ->\n              @style \"\"\"\n                .#{containerClass} div.#{cssClass 'thisFooter'} div.#{cssClass 'resultFooter'} {\n                  /* overflow:auto; */\n                  vertical-align: middle;\n                }\n                .#{containerClass} div.#{cssClass 'thisFooter'} div.#{cssClass 'resultDatum'} {\n                  text-align:initial;\n                  vertical-align:initial;\n                  display:inline-block;\n                }\n                \"\"\"\n              @div class:cssClass(\"resultFooter\"), style:\"display:none\", ->\n                @div class:cssClass(\"resultDatum\"), ->\n              @div class:cssClass(\"introFooter\"), ->\n                @b controller.pkgInfo.version\n                @span ->\n                  @span \": \"\n                  @i \"A Reflective Coffescript Console/Editor!\"\n                @printHtml \" &bull; \"\n                @a href:\"https://github.com/rev22/reflective-coffeescript\", \"Reflective Coffeescript\"\n      ";
       return x;
     })(function(withHtmlcup, _arg) {
       var containerClass, controller, cssClass, homeEvent, i, text;
@@ -1536,7 +1577,7 @@ window.coffeecharnia = {
         return i.coffeecharniaLayout({
           cssClass: containerClass,
           htmlcup: this,
-          style: controller.inlineStyle(),
+          style: controller.getInlineStyle(),
           innerStyle: "." + containerClass + " pre { background:none; color:inherit; }\n." + containerClass + " div, ." + containerClass + " pre { padding: 0; margin:0; }\n." + containerClass + " a { color: #ffb }\n." + containerClass + " a:visited { color: #eec }\n." + containerClass + " a:hover { color: white }",
           minheight: "7em",
           minwidth: "60em",
