@@ -50,6 +50,7 @@ window.coffeecharnia =
     ).join ";"
 
   setStyle: (k,v)@> @inlineStyle[k] = v; @updateInlineStyle()
+  setAlpha: (x)@> @setStyle 'opacity', x
 
   isConverting: false
     

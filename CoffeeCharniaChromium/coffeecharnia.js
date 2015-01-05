@@ -118,6 +118,12 @@ window.coffeecharnia = {
     this.inlineStyle[k] = v;
     return this.updateInlineStyle();
   }),
+  setAlpha: (function(x) {
+    x.coffee = "(x)@> @setStyle 'opacity', x";
+    return x;
+  })(function(x) {
+    return this.setStyle('opacity', x);
+  }),
   isConverting: false,
   target: null,
   processSource: (function(x) {
