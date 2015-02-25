@@ -27,7 +27,7 @@ htmlcup.html lang:"en", manifest:"coffeecharnia.appcache", style:"height:100%", 
     @meta name:"mobile-web-app-capable", content:"yes"
     @link rel:"shortcut icon", href:datauriicon("favicon.ico")
   @body ->
-    @script src:"embeddedScripts.js"
+    @script src:"lib/embeddedScripts.js"
     @script src:"coffeecharnia.js"
     @script "( { sizePercentage: 100, __proto__: coffeecharnia } ).spawn()"
     @coffeeScript ->
