@@ -3,7 +3,7 @@ window.coffeecharnia =
     coffeescriptUrl: "coffee-script.js" # "lib/coffee-script.js"
     codeLogUrl: "http://localhost/cgi-bin/coffeecharnialog"
   pkgInfo:
-    version: "CoffeeCharnia 0.3.56"
+    version: "CoffeeCharnia 0.3.57"
     description: "Reflective CoffeeScript Console"
     copyright: "Copyright (c) 2014, 2015 Michele Bini"
     license: "GPL3"
@@ -1245,7 +1245,6 @@ window.coffeecharnia =
           # Transform the textarea on the page into an ace editor.
           for a in [ app.view.coffeeArea ] # (x for x in document.getElementsByClassName("editArea")).reverse()
             do (a, e = ace.require("ace/ext/textarea").transformTextarea(a))->
-              e = ace.require("ace/ext/textarea").transformTextarea(a)
               e.navigateFileEnd()
               a.setupTransform(e)
               a.onchange = ->
