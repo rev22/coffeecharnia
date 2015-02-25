@@ -957,6 +957,7 @@ window.coffeecharnia =
       callback() if callback?
       return
     # Intercept script request
+    (window.embeddedScriptsRequested ?= []).push src
     if (code = window.embeddedScripts?[src])?
       setTimeout <. window
       ((x)-> setTimeout x, 0) ()->
@@ -1190,6 +1191,7 @@ window.coffeecharnia =
           load = (path, callback) ->
             # Intercept script request
             src = baseUrl + "/" + path
+            (window.embeddedScriptsRequested ?= []).push src
             if (code = window.embeddedScripts?[src])?
               setTimeout <. window
               ((x)-> setTimeout x, 0) ()->
