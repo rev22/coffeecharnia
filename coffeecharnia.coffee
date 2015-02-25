@@ -3,7 +3,7 @@ window.coffeecharnia =
     coffeescriptUrl: "coffee-script.js" # "lib/coffee-script.js"
     codeLogUrl: "http://localhost/cgi-bin/coffeecharnialog"
   pkgInfo:
-    version: "CoffeeCharnia 0.3.57"
+    version: "CoffeeCharnia 0.3.58"
     description: "Reflective CoffeeScript Console"
     copyright: "Copyright (c) 2014, 2015 Michele Bini"
     license: "GPL3"
@@ -1214,11 +1214,19 @@ window.coffeecharnia =
               return
       
             return
+
+          showErrors = do (window)@> (x)->
+            try
+              x()
+            catch e
+              alert <. window
+              alert e
       
           if window.ace?
             
-            # load("ace.js", function() {
-            window.ace.config.loadModule "ace/ext/textarea", ->
+            # load "ace.js", function() {
+            # window.ace.config.loadModule "ace/ext/textarea", ->
+            load "ace/ext/textarea", -> showErrors ->
               if false
                 event = window.ace.require("ace/lib/event")
                 areas = document.getElementsByTagName("textarea")
