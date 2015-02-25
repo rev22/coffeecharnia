@@ -3,7 +3,7 @@ window.coffeecharnia =
     coffeescriptUrl: "coffee-script.js" # "lib/coffee-script.js"
     codeLogUrl: "http://localhost/cgi-bin/coffeecharnialog"
   pkgInfo:
-    version: "CoffeeCharnia 0.3.54"
+    version: "CoffeeCharnia 0.3.55"
     description: "Reflective CoffeeScript Console"
     copyright: "Copyright (c) 2014, 2015 Michele Bini"
     license: "GPL3"
@@ -1195,7 +1195,6 @@ window.coffeecharnia =
               ((x)-> setTimeout x, 0) ()->
                 window.eval code
                 callback() if callback
-              setTimeout (-> window.eval code), 0
               return
             alert <. window
             alert src
