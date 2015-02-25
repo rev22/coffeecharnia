@@ -1249,9 +1249,12 @@ window.coffeecharnia =
         # });
       
         window.ace? then camelcapBookmarklet.setup(window.ace)
+
+        # aceUrl <. app
+        aceUrl = "ACE/"
       
         # Call the inject function to load the ace files.
-        inject {}, do (ace = window.ace)-> ->
+        inject { baseUrl: aceUrl }, do (ace = window.ace)-> ->
           
           # Transform the textarea on the page into an ace editor.
           for a in [ app.view.coffeeArea ] # (x for x in document.getElementsByClassName("editArea")).reverse()
