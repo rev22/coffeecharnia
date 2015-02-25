@@ -7,7 +7,7 @@ window.coffeecharnia = {
     codeLogUrl: "http://localhost/cgi-bin/coffeecharnialog"
   },
   pkgInfo: {
-    version: "CoffeeCharnia 0.3.50",
+    version: "CoffeeCharnia 0.3.52",
     description: "Reflective CoffeeScript Console",
     copyright: "Copyright (c) 2014, 2015 Michele Bini",
     license: "GPL3"
@@ -1446,10 +1446,10 @@ window.coffeecharnia = {
     }
   }),
   jsLoad: (function(x) {
-    x.coffee = "(sym, src, callback)@>\n    charnia = @\n    { window, document, deleteNode } = @lib\n    if sym and window[sym]?\n      callback() if callback?\n      return\n    x = document.createElement('script')\n    x.type = 'text/javascript'\n    x.src = src\n    y = 1\n    x.onload = x.onreadystatechange = ()->\n      charnia.assert(window[sym]?, \"Symbol #{sym} was not defined after loading library\") if sym\n      if y and not @readyState or @readyState is 'complete'\n        y = 0\n        deleteNode x\n        callback() if callback\n    document.getElementsByTagName('head')[0].appendChild x\n    \n  ";
+    x.coffee = "(sym, src, callback)@>\n    charnia = @\n    { window, document, deleteNode } = @lib\n    if sym and window[sym]?\n      callback() if callback?\n      return\n    # Intercept script request\n    if (code = window.embeddedScripts?[src])?\n      setTimeout <. window\n      setTimeout (-> window.eval code), 0\n      return\n    alert <. window\n    alert src\n    (window.missingScripts ?= []).push src\n    return\n    x = document.createElement('script')\n    x.type = 'text/javascript'\n    x.src = src\n    y = 1\n    x.onload = x.onreadystatechange = ()->\n      charnia.assert(window[sym]?, \"Symbol #{sym} was not defined after loading library\") if sym\n      if y and not @readyState or @readyState is 'complete'\n        y = 0\n        deleteNode x\n        callback() if callback\n    document.getElementsByTagName('head')[0].appendChild x\n    \n  ";
     return x;
   })(function(sym, src, callback) {
-    var charnia, deleteNode, document, window, x, y, _ref;
+    var alert, charnia, code, deleteNode, document, setTimeout, window, x, y, _ref, _ref1;
     charnia = this;
     _ref = this.lib, window = _ref.window, document = _ref.document, deleteNode = _ref.deleteNode;
     if (sym && (window[sym] != null)) {
@@ -1458,6 +1458,17 @@ window.coffeecharnia = {
       }
       return;
     }
+    if ((code = (_ref1 = window.embeddedScripts) != null ? _ref1[src] : void 0) != null) {
+      setTimeout = window.setTimeout;
+      setTimeout((function() {
+        return window["eval"](code);
+      }), 0);
+      return;
+    }
+    alert = window.alert;
+    alert(src);
+    (window.missingScripts != null ? window.missingScripts : window.missingScripts = []).push(src);
+    return;
     x = document.createElement('script');
     x.type = 'text/javascript';
     x.src = src;
@@ -1689,7 +1700,7 @@ window.coffeecharnia = {
   global: window["eval"]('window'),
   window: window,
   spawn: (function(x) {
-    x.coffee = "(opts)@>\n    { target, text, cb } = opts if opts?\n    charnia = (@view then @__proto__ else @)\n    { coffeescriptUrl } = @config\n    { aceUrl, htmlGizmo } = @\n    { document, window, DynmodPrinter, Error, camelcapBookmarklet, htmlcup, aceRefcoffeeMode } = @lib\n    htmlcup = htmlcup.compileLib()\n  \n    element = (htmlGizmo = __proto__: htmlGizmo).make ((x)-> @element = htmlcup.captureFirstTag x), { controller: charnia, text }\n    \n    document.body.appendChild element\n    \n    withAce = (cb)-> charnia.jsLoad 'ace', aceUrl, cb\n    withCoffee = (cb)-> charnia.jsLoad 'CoffeeScript', coffeescriptUrl, cb\n    withCoffee ->\n      \n      app =\n        target: target\n      \n        libs:\n          CoffeeScript: window.CoffeeScript\n          aceRefcoffeeMode: aceRefcoffeeMode\n          # ace: window.ace\n        \n        eval: window.eval\n        setTimeout: window.setTimeout\n        getInputSelection: window.getInputSelection\n    \n        view: ((x)-> r = {}; r[v] = htmlGizmo.getElement(v) for v in x.split(\",\"); r.coffeecharniaConsole = element; r ) \"coffeeArea,runButton,enlargeButton,dragButton,shrinkButton,killButton,introFooter,resultFooter,resultDatum\"\n                 \n        # ace: ace ? null\n        # setupAce: @> @ace.edit(@view.coffeeArea)\n    \n        Error: Error\n    \n        files: { }\n    \n        __proto__: charnia\n    \n      app.setup()\n    \n      withAce ->\n        ace = window.ace\n\n        app.libs.ace = ace\n        \n        # Some sane defaults!  However, this code does not seem to effect any change\n        ###\n        false then ace?.options =\n            mode:             \"coffee\"\n            theme:            \"cobalt\"\n            gutter:           \"true\"\n            # fontSize:         \"10px\"\n            # softWrap:         \"off\"\n            # keybindings:      \"ace\"\n            # showPrintMargin:  \"true\"\n            # useSoftTabs:      \"true\"\n            # showInvisibles:   \"false\"\n        ###\n        inject = (options, callback) ->\n          baseUrl = options.baseUrl or \"../../src-noconflict\"\n          load = (path, callback) ->\n            head = document.getElementsByTagName(\"head\")[0]\n            s = document.createElement(\"script\")\n            s.type = 'text/javascript'\n            s.src = baseUrl + \"/\" + path\n            head.appendChild s\n            s.onload = s.onreadystatechange = (_, isAbort) ->\n              if isAbort or not s.readyState or s.readyState is \"loaded\" or s.readyState is \"complete\"\n                s = s.onload = s.onreadystatechange = null\n                callback()  unless isAbort\n              return\n      \n            return\n      \n          if window.ace?\n            \n            # load(\"ace.js\", function() {\n            window.ace.config.loadModule \"ace/ext/textarea\", ->\n              if false\n                event = window.ace.require(\"ace/lib/event\")\n                areas = document.getElementsByTagName(\"textarea\")\n                i = 0\n      \n                while i < areas.length\n                  event.addListener areas[i], \"click\", (e) ->\n                    window.ace.transformTextarea e.target, options.ace  if e.detail is 3\n                    return\n      \n                  i++\n              callback and callback()\n              return\n      \n          return\n      \n        # });\n      \n        window.ace? then camelcapBookmarklet.setup(window.ace)\n      \n        # Call the inject function to load the ace files.\n        inject {}, do (ace = window.ace)-> ->\n          \n          # Transform the textarea on the page into an ace editor.\n          for a in [ app.view.coffeeArea ] # (x for x in document.getElementsByClassName(\"editArea\")).reverse()\n            do (a, e = ace.require(\"ace/ext/textarea\").transformTextarea(a))->\n              e = ace.require(\"ace/ext/textarea\").transformTextarea(a)\n              e.navigateFileEnd()\n              a.setupTransform(e)\n              a.onchange = ->\n                # alert \"a onchange \" + x\n                e.setValue @value, -1\n                return\n      \n              e.on \"change\", ->\n                # alert \"e change \" + x\n                a.value = e.getValue()\n                a.oninput?()\n                return\n      \n              e.on \"blur\", ->\n                # alert \"e blur \" + x\n                a.value = e.getValue()\n                a.onblur?()\n                return\n      \n              e.on \"focus\", ->\n                a.onfocus?()\n                return\n          return\n\n      cb?(app)";
+    x.coffee = "(opts)@>\n    { target, text, cb } = opts if opts?\n    charnia = (@view then @__proto__ else @)\n    { coffeescriptUrl } = @config\n    { aceUrl, htmlGizmo } = @\n    { document, window, DynmodPrinter, Error, camelcapBookmarklet, htmlcup, aceRefcoffeeMode } = @lib\n    htmlcup = htmlcup.compileLib()\n  \n    element = (htmlGizmo = __proto__: htmlGizmo).make ((x)-> @element = htmlcup.captureFirstTag x), { controller: charnia, text }\n    \n    document.body.appendChild element\n    \n    withAce = (cb)-> charnia.jsLoad 'ace', aceUrl, cb\n    withCoffee = (cb)-> charnia.jsLoad 'CoffeeScript', coffeescriptUrl, cb\n    withCoffee ->\n      \n      app =\n        target: target\n      \n        libs:\n          CoffeeScript: window.CoffeeScript\n          aceRefcoffeeMode: aceRefcoffeeMode\n          # ace: window.ace\n        \n        eval: window.eval\n        setTimeout: window.setTimeout\n        getInputSelection: window.getInputSelection\n    \n        view: ((x)-> r = {}; r[v] = htmlGizmo.getElement(v) for v in x.split(\",\"); r.coffeecharniaConsole = element; r ) \"coffeeArea,runButton,enlargeButton,dragButton,shrinkButton,killButton,introFooter,resultFooter,resultDatum\"\n                 \n        # ace: ace ? null\n        # setupAce: @> @ace.edit(@view.coffeeArea)\n    \n        Error: Error\n    \n        files: { }\n    \n        __proto__: charnia\n    \n      app.setup()\n    \n      withAce ->\n        ace = window.ace\n\n        app.libs.ace = ace\n        \n        # Some sane defaults!  However, this code does not seem to effect any change\n        ###\n        false then ace?.options =\n            mode:             \"coffee\"\n            theme:            \"cobalt\"\n            gutter:           \"true\"\n            # fontSize:         \"10px\"\n            # softWrap:         \"off\"\n            # keybindings:      \"ace\"\n            # showPrintMargin:  \"true\"\n            # useSoftTabs:      \"true\"\n            # showInvisibles:   \"false\"\n        ###\n        inject = (options, callback) ->\n          baseUrl = options.baseUrl or \"../../src-noconflict\"\n          load = (path, callback) ->\n            # Intercept script request\n            src = baseUrl + \"/\" + path\n            if (code = window.embeddedScripts?[src])?\n              setTimeout <. window\n              setTimeout (-> window.eval code), 0\n              return\n            alert <. window\n            alert src\n            (window.missingScripts ?= []).push src\n            return\n            head = document.getElementsByTagName(\"head\")[0]\n            s = document.createElement(\"script\")\n            s.type = 'text/javascript'\n            s.src = src\n            head.appendChild s\n            s.onload = s.onreadystatechange = (_, isAbort) ->\n              if isAbort or not s.readyState or s.readyState is \"loaded\" or s.readyState is \"complete\"\n                s = s.onload = s.onreadystatechange = null\n                callback()  unless isAbort\n              return\n      \n            return\n      \n          if window.ace?\n            \n            # load(\"ace.js\", function() {\n            window.ace.config.loadModule \"ace/ext/textarea\", ->\n              if false\n                event = window.ace.require(\"ace/lib/event\")\n                areas = document.getElementsByTagName(\"textarea\")\n                i = 0\n      \n                while i < areas.length\n                  event.addListener areas[i], \"click\", (e) ->\n                    window.ace.transformTextarea e.target, options.ace  if e.detail is 3\n                    return\n      \n                  i++\n              callback and callback()\n              return\n      \n          return\n      \n        # });\n      \n        window.ace? then camelcapBookmarklet.setup(window.ace)\n      \n        # Call the inject function to load the ace files.\n        inject {}, do (ace = window.ace)-> ->\n          \n          # Transform the textarea on the page into an ace editor.\n          for a in [ app.view.coffeeArea ] # (x for x in document.getElementsByClassName(\"editArea\")).reverse()\n            do (a, e = ace.require(\"ace/ext/textarea\").transformTextarea(a))->\n              e = ace.require(\"ace/ext/textarea\").transformTextarea(a)\n              e.navigateFileEnd()\n              a.setupTransform(e)\n              a.onchange = ->\n                # alert \"a onchange \" + x\n                e.setValue @value, -1\n                return\n      \n              e.on \"change\", ->\n                # alert \"e change \" + x\n                a.value = e.getValue()\n                a.oninput?()\n                return\n      \n              e.on \"blur\", ->\n                # alert \"e blur \" + x\n                a.value = e.getValue()\n                a.onblur?()\n                return\n      \n              e.on \"focus\", ->\n                a.onfocus?()\n                return\n          return\n\n      cb?(app)";
     return x;
   })(function(opts) {
     var DynmodPrinter, Error, aceRefcoffeeMode, aceUrl, camelcapBookmarklet, cb, charnia, coffeescriptUrl, document, element, htmlGizmo, htmlcup, target, text, window, withAce, withCoffee, _ref;
@@ -1764,11 +1775,23 @@ window.coffeecharnia = {
           var baseUrl, load;
           baseUrl = options.baseUrl || "../../src-noconflict";
           load = function(path, callback) {
-            var head, s;
+            var alert, code, head, s, setTimeout, src, _ref1;
+            src = baseUrl + "/" + path;
+            if ((code = (_ref1 = window.embeddedScripts) != null ? _ref1[src] : void 0) != null) {
+              setTimeout = window.setTimeout;
+              setTimeout((function() {
+                return window["eval"](code);
+              }), 0);
+              return;
+            }
+            alert = window.alert;
+            alert(src);
+            (window.missingScripts != null ? window.missingScripts : window.missingScripts = []).push(src);
+            return;
             head = document.getElementsByTagName("head")[0];
             s = document.createElement("script");
             s.type = 'text/javascript';
-            s.src = baseUrl + "/" + path;
+            s.src = src;
             head.appendChild(s);
             s.onload = s.onreadystatechange = function(_, isAbort) {
               if (isAbort || !s.readyState || s.readyState === "loaded" || s.readyState === "complete") {

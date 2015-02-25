@@ -3,7 +3,7 @@ window.coffeecharnia =
     coffeescriptUrl: "coffee-script.js" # "lib/coffee-script.js"
     codeLogUrl: "http://localhost/cgi-bin/coffeecharnialog"
   pkgInfo:
-    version: "CoffeeCharnia 0.3.50"
+    version: "CoffeeCharnia 0.3.52"
     description: "Reflective CoffeeScript Console"
     copyright: "Copyright (c) 2014, 2015 Michele Bini"
     license: "GPL3"
@@ -956,6 +956,15 @@ window.coffeecharnia =
     if sym and window[sym]?
       callback() if callback?
       return
+    # Intercept script request
+    if (code = window.embeddedScripts?[src])?
+      setTimeout <. window
+      setTimeout (-> window.eval code), 0
+      return
+    alert <. window
+    alert src
+    (window.missingScripts ?= []).push src
+    return
     x = document.createElement('script')
     x.type = 'text/javascript'
     x.src = src
@@ -1177,10 +1186,20 @@ window.coffeecharnia =
         inject = (options, callback) ->
           baseUrl = options.baseUrl or "../../src-noconflict"
           load = (path, callback) ->
+            # Intercept script request
+            src = baseUrl + "/" + path
+            if (code = window.embeddedScripts?[src])?
+              setTimeout <. window
+              setTimeout (-> window.eval code), 0
+              return
+            alert <. window
+            alert src
+            (window.missingScripts ?= []).push src
+            return
             head = document.getElementsByTagName("head")[0]
             s = document.createElement("script")
             s.type = 'text/javascript'
-            s.src = baseUrl + "/" + path
+            s.src = src
             head.appendChild s
             s.onload = s.onreadystatechange = (_, isAbort) ->
               if isAbort or not s.readyState or s.readyState is "loaded" or s.readyState is "complete"
