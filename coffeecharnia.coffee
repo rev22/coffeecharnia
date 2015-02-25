@@ -1179,6 +1179,7 @@ window.coffeecharnia =
           load = (path, callback) ->
             head = document.getElementsByTagName("head")[0]
             s = document.createElement("script")
+            s.type = 'text/javascript'
             s.src = baseUrl + "/" + path
             head.appendChild s
             s.onload = s.onreadystatechange = (_, isAbort) ->
