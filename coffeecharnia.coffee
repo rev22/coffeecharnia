@@ -551,7 +551,9 @@ window.coffeecharnia =
       #
       #  Creates a new object
       #
-      setElement: (@element)->
+      setElement: (e)->
+        @element = e
+        e.htmlGizmo = @
         # This may be run after 'make' to the set element when it is obtained
       getGlobalCss: @> # Abstract
       getElement: (name)@>

@@ -715,8 +715,9 @@ window.coffeecharnia = {
         copyright: "Copyright (c) 2014 Michele Bini",
         license: "GPL3"
       },
-      setElement: function(element) {
-        this.element = element;
+      setElement: function(e) {
+        this.element = e;
+        return e.htmlGizmo = this;
       },
       getGlobalCss: (function(x) {
         x.coffee = "@>";
