@@ -4,6 +4,7 @@ scripts = [
   [ 'ACE/ext-textarea.js', 'lib/ext-textarea.js' ]
   [ 'ACE/mode-javascript.js', 'lib/mode-javascript.js' ]
   [ 'ACE/mode-coffee.js', 'lib/mode-coffee.js' ]
+  [ 'ACE/ext-searchbox.js', 'lib/ext-searchbox.js' ]
 ]
 
 fs = require 'fs'

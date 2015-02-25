@@ -3,7 +3,7 @@ window.coffeecharnia =
     coffeescriptUrl: "coffee-script.js" # "lib/coffee-script.js"
     codeLogUrl: "http://localhost/cgi-bin/coffeecharnialog"
   pkgInfo:
-    version: "CoffeeCharnia 0.3.62"
+    version: "CoffeeCharnia 0.3.63"
     description: "Reflective CoffeeScript Console"
     copyright: "Copyright (c) 2014, 2015 Michele Bini"
     license: "GPL3"
@@ -965,7 +965,7 @@ window.coffeecharnia =
         callback() if callback
       return
     alert <. window
-    alert src
+    alert "Internal error: script to preload: #{src}"
     (window.missingScripts ?= []).push src
     return
     x = document.createElement('script')
@@ -1199,7 +1199,7 @@ window.coffeecharnia =
                 callback() if callback
               return
             alert <. window
-            alert src
+            alert "Internal error: script to preload: #{src}"
             (window.missingScripts ?= []).push src
             return
             head = document.getElementsByTagName("head")[0]
