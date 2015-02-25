@@ -50,3 +50,10 @@ swipeboard.js: ../swipeboard/swipeboard.js
 SwipeBoard.html: SwipeBoard.html.coffee swipeboard.js coffee-script.js coffeecharnia.js
 	(sh -c "coffee $< >$@.new" && mv $@.new $@ && touch -r $< $@) || rm -f $@
 	echo >>coffeecharnia.appcache
+
+%: %.gen.coffee
+	(coffee $< >$@.new && mv $@.new $@ && touch -r $< $@) || rm -f $@
+
+coffeecharnia_embedjs.js: embeddedScripts.js coffeecharnia.js
+	cat $^ >$@
+ 
