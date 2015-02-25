@@ -1222,11 +1222,14 @@ window.coffeecharnia =
               alert <. window
               alert e
       
+          showErrors ->
+            window.ace.require("ace/lib/net").loadScript = load
+
           if window.ace?
             
             # load "ace.js", function() {
-            # window.ace.config.loadModule "ace/ext/textarea", ->
-            load "ace/ext/textarea", -> showErrors ->
+            window.ace.config.loadModule "ace/ext/textarea", -> showErrors ->
+            # load "ace/ext/textarea", -> showErrors ->
               if false
                 event = window.ace.require("ace/lib/event")
                 areas = document.getElementsByTagName("textarea")
