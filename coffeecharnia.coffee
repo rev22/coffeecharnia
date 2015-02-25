@@ -3,7 +3,7 @@ window.coffeecharnia =
     coffeescriptUrl: "coffee-script.js" # "lib/coffee-script.js"
     codeLogUrl: "http://localhost/cgi-bin/coffeecharnialog"
   pkgInfo:
-    version: "CoffeeCharnia 0.3.60"
+    version: "CoffeeCharnia 0.3.61"
     description: "Reflective CoffeeScript Console"
     copyright: "Copyright (c) 2014, 2015 Michele Bini"
     license: "GPL3"
@@ -1251,7 +1251,7 @@ window.coffeecharnia =
         window.ace? then camelcapBookmarklet.setup(window.ace)
 
         # aceUrl <. app
-        aceUrl = "ACE/"
+        aceUrl = "ACE"
       
         # Call the inject function to load the ace files.
         inject { baseUrl: aceUrl }, do (ace = window.ace)-> ->
