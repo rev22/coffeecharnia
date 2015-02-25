@@ -1,5 +1,6 @@
 scripts = [
   [ 'coffee-script.js', 'CoffeeCharniaChromium/coffee-script.js' ]
+  [ 'https://github.com/ajaxorg/ace-builds/raw/master/src-min-noconflict/ace.js', 'lib/ace.js' ]
 ]
 
 fs = require 'fs'
@@ -8,6 +9,7 @@ write = (x)-> process.stdout.write x
 
 write """
   window.embeddedScripts = window.embeddedScripts || { };
+
   """
 
 quot = (x)-> '"' + x.replace(/[\\\"]/g, (a)-> "\\#{a}").replace(/\n/g, "\\n") + '"'

@@ -52,7 +52,7 @@ SwipeBoard.html: SwipeBoard.html.coffee swipeboard.js coffee-script.js coffeecha
 	echo >>coffeecharnia.appcache
 
 %: %.gen.coffee
-	(coffee $< >$@.new && mv $@.new $@ && touch -r $< $@) || rm -f $@
+	(coffee $< >$@.new && mv $@.new $@) || rm -f $@
 
 coffeecharnia_embedjs.js: embeddedScripts.js coffeecharnia.js
 	cat $^ >$@
