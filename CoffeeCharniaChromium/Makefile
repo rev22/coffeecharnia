@@ -1,4 +1,4 @@
-TARGETS=coffee-script.js coffeecharnia.js
+TARGETS=coffee-script.js coffeecharnia.js embeddedScripts.js
 
 all: $(TARGETS)
 
@@ -13,3 +13,6 @@ coffee-script.js: ../../reflective-coffeescript/extras/coffee-script.js
 
 coffeecharnia.coffee: ../coffeecharnia.coffee
 	( cat $<; echo; echo 'window.coffeecharnia.spawn()' ) >$@
+
+embeddedScripts.js: ../lib/embeddedScripts.js
+	cp -uav $< $@
