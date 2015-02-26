@@ -1074,7 +1074,7 @@
             .#{containerClass} a:visited { color: #eec }
             .#{containerClass} a:hover { color: white }
             """
-          minheight: "7em",
+          minheight: "40%",
           minwidth: "60em",
           head: ->
             @meta charset:"utf-8"
