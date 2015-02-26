@@ -15,7 +15,7 @@
       codeLogUrl: "http://localhost/cgi-bin/coffeecharnialog"
     },
     pkgInfo: {
-      version: "CoffeeCharnia 0.3.66",
+      version: "CoffeeCharnia 0.3.67",
       description: "Reflective CoffeeScript Console",
       copyright: "Copyright (c) 2014, 2015 Michele Bini",
       license: "GPL3"
