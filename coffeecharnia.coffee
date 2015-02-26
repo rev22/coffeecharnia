@@ -197,6 +197,8 @@
       { setTimeout } = @
       setTimeout (=>
         editor = @view.coffeeArea.transformed
+        x = editor.container.parentNode
+        x.style.height = x.parentNode.getClientRects()[0].height + "px"
         editor.resize()
         editor.renderer.scrollCursorIntoView()
       ), 0
