@@ -1325,5 +1325,59 @@ window.coffeecharnia =
           true
         
         window.addEventListener 'paste', chromeAndroidPasteFix, true if (ua = window.navigator?.userAgent) and /mobile/i.test(ua) and /webkit\/[0-5][0-9][0-9]\./i.test(ua)
-        
+
+        if true
+          
+          fnKeyDown = false
+          
+          aceCommand = (cmd)->
+              x = document.activeElement
+              e = null
+              while x?
+                  break if (e = x.previousSibling?.transformed)?.renderer
+                  x = x.parentElement
+              e?.execCommand cmd
+          
+          # keypressHandler = (event)->
+              # (window.keys ?= [ ]).push { event, type:"press", m:getMods(event) }
+          keydownHandler = (event)->
+              # return
+              # (window.keys ?= [ ]).push { event, type:"down", m:getMods(event) }
+              event.keyCode is 0 then fnKeyDown = true
+              else if fnKeyDown
+                if event.keyCode is 78
+                    aceCommand (event.shiftKey then "selectright" else "gotoright")
+                else if event.keyCode is 16
+                else if event.keyCode is 72
+                    aceCommand (event.shiftKey then "selectleft" else "gotoleft")
+                else if event.keyCode is 84
+                    aceCommand (event.shiftKey then "selectdown" else "golinedown")
+                else if event.keyCode is 67
+                    aceCommand (event.shiftKey then "selectup" else "golineup")
+                else if event.keyCode is 71
+                    aceCommand (event.shiftKey then "selecttolinestart" else "gotolinestart")
+                else if event.keyCode is 82
+                    aceCommand (event.shiftKey then "selecttolineend" else "gotolineend")
+                else if event.keyCode is 189
+                    aceCommand "backspace"
+                else if event.keyCode is 191
+                    aceCommand "del"
+                else if event.keyCode is 187
+                    aceCommand (event.shiftKey then "selectpageup" else "gotopageup")
+                else if event.keyCode is 220
+                    aceCommand (event.shiftKey then "selectpagedown" else "gotopagedown")
+                else
+                    alert <. window
+                    alert "Unexpected fn key combo: #{event.keyCode}"
+                    fnKeyDown = false
+                # event.stopPropagation()
+                event.preventDefault()
+          keyupHandler = (event)->
+              # (window.keys ?= [ ]).push { event, type:"up", m:getMods(event) }
+              event.keyCode is 0 then fnKeyDown = false
+          
+          window.addEventListener "keydown", keydownHandler, true
+          window.addEventListener "keyup", keyupHandler, true
+          # window.addEventListener "keypress", (-> window.keypressHandler.apply @, arguments), true
+                 
       cb?(app)
