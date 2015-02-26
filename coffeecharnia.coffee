@@ -1,4 +1,9 @@
-((x)-> try x() catch error alert "Error while loading coffeecharnia: #{error}") ()-> window.coffeecharnia =
+((x)->
+  try
+    x()
+  catch error
+    alert "Error while loading coffeecharnia: #{error}"
+) ()-> window.coffeecharnia =
   config:
     coffeescriptUrl: "coffee-script.js" # "lib/coffee-script.js"
     codeLogUrl: "http://localhost/cgi-bin/coffeecharnialog"
