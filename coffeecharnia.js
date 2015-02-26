@@ -65,7 +65,7 @@
       background: 'black',
       color: '#ddd',
       'text-align': 'initial',
-      'font-size': '12px'
+      'font-size': '16px'
     },
     sizePercentage: 70,
     getInlineStyle: (function(x) {
