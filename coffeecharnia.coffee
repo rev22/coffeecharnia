@@ -614,6 +614,20 @@ window.coffeecharnia =
       withFilter: (filter)@>
         filter: filter
         __proto__: @
+      printSpecialObject: (x, ind)@>
+        if (tagName <. x)? and (getAttribute <. x)?
+          l = "#{ind}@#{tagName.toLowerCase()} " + (
+            "#{a.nodeName}: \"#{a.nodeValue}\" " for a in x.attributes 
+          ).join("") + "->\n"
+          l = [ l ]
+          ind = ind + "  "
+          x = x.firstChild
+          while x?
+            l.push @printSpecialObject(x, ind)
+            x = x.nextSibling
+          l.join ""
+        else
+          null
       print:
         (x, prev, depth = 0, ind = "")@>
           p = arguments.callee
@@ -694,6 +708,8 @@ window.coffeecharnia =
                     l.push ni + clean(xx).replace(/\n/g, '\n' + ni)
                   l.push ind + "]"
                   l.join "\n"
+            else if (specialPrinted = @printSpecialObject(x, ind))?
+              specialPrinted
             else
               l = [ ]
               @window?.document?   and   x.id?   and   typeof x.id is "string"   and   x is @window.document.getElementById x.id   then
