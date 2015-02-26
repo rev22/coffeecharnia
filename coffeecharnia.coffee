@@ -617,7 +617,7 @@ window.coffeecharnia =
       printSpecialObject: (x, ind)@>
         if (tagName <. x)? and (getAttribute <. x)?
           l = "#{ind}@#{tagName.toLowerCase()} " + (
-            "#{a.nodeName}: \"#{a.nodeValue}\" " for a in x.attributes 
+            "#{a.nodeName}:\"#{a.nodeValue}\", " for a in x.attributes 
           ).join("") + "->\n"
           l = [ l ]
           ind = ind + "  "

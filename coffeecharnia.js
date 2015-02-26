@@ -846,7 +846,7 @@ window.coffeecharnia = {
         };
       }),
       printSpecialObject: (function(x) {
-        x.coffee = "(x, ind)@>\n        if (tagName <. x)? and (getAttribute <. x)?\n          l = \"#{ind}@#{tagName.toLowerCase()} \" + (\n            \"#{a.nodeName}: \\\"#{a.nodeValue}\\\" \" for a in x.attributes \n          ).join(\"\") + \"->\\n\"\n          l = [ l ]\n          ind = ind + \"  \"\n          x = x.firstChild\n          while x?\n            l.push @printSpecialObject(x, ind)\n            x = x.nextSibling\n          l.join \"\"\n        else\n          null\n      ";
+        x.coffee = "(x, ind)@>\n        if (tagName <. x)? and (getAttribute <. x)?\n          l = \"#{ind}@#{tagName.toLowerCase()} \" + (\n            \"#{a.nodeName}:\\\"#{a.nodeValue}\\\", \" for a in x.attributes \n          ).join(\"\") + \"->\\n\"\n          l = [ l ]\n          ind = ind + \"  \"\n          x = x.firstChild\n          while x?\n            l.push @printSpecialObject(x, ind)\n            x = x.nextSibling\n          l.join \"\"\n        else\n          null\n      ";
         return x;
       })(function(x, ind) {
         var a, getAttribute, l, tagName;
@@ -857,7 +857,7 @@ window.coffeecharnia = {
             _results = [];
             for (_i = 0, _len = _ref.length; _i < _len; _i++) {
               a = _ref[_i];
-              _results.push("" + a.nodeName + ": \"" + a.nodeValue + "\" ");
+              _results.push("" + a.nodeName + ":\"" + a.nodeValue + "\", ");
             }
             return _results;
           })()).join("") + "->\n";
