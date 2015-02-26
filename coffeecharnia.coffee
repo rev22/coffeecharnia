@@ -1331,7 +1331,7 @@
         
         window.addEventListener 'paste', chromeAndroidPasteFix, true if (ua = window.navigator?.userAgent) and /mobile/i.test(ua) and /webkit\/[0-5][0-9][0-9]\./i.test(ua)
 
-        if true
+        window.customDvorakKeys ?= do->
           
           fnKeyDown = false
           
@@ -1385,4 +1385,6 @@
           window.addEventListener "keyup", keyupHandler, true
           # window.addEventListener "keypress", (-> window.keypressHandler.apply @, arguments), true
                  
+          true
+
       cb?(app)
