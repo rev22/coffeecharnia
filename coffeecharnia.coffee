@@ -8,7 +8,7 @@
     coffeescriptUrl: "coffee-script.js" # "lib/coffee-script.js"
     codeLogUrl: "http://localhost/cgi-bin/coffeecharnialog"
   pkgInfo:
-    version: "CoffeeCharnia 0.3.65"
+    version: "CoffeeCharnia 0.3.66"
     description: "Reflective CoffeeScript Console"
     copyright: "Copyright (c) 2014, 2015 Michele Bini"
     license: "GPL3"
@@ -1074,7 +1074,7 @@
             .#{containerClass} a:visited { color: #eec }
             .#{containerClass} a:hover { color: white }
             """
-          minheight: "70%",
+          minheight: "11em",
           minwidth: "60em",
           head: ->
             @meta charset:"utf-8"
