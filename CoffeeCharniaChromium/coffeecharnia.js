@@ -15,7 +15,7 @@
       codeLogUrl: "http://localhost/cgi-bin/coffeecharnialog"
     },
     pkgInfo: {
-      version: "CoffeeCharnia 0.3.64",
+      version: "CoffeeCharnia 0.3.65",
       description: "Reflective CoffeeScript Console",
       copyright: "Copyright (c) 2014, 2015 Michele Bini",
       license: "GPL3"
@@ -67,6 +67,7 @@
       'text-align': 'initial',
       'font-size': '12px'
     },
+    sizePercentage: 70,
     getInlineStyle: (function(x) {
       x.coffee = "@>\n    s = @sizePercentage ? 38\n    fix = (x)-> x.toFixed(2)\n    (g = @gravity)? then\n      [ x, y ] = g\n    else\n      x = y = 1\n    i = @inlineStyle\n    i.top = i.bottom = null\n    ([ (-> i.top = 0),   (-> i.top = \"#{fix((100-s)/2)}%\"),   (-> i.bottom = 0)  ])[y]()\n    i.right = i.left = null\n    ([ (-> i.left = 0),  (-> i.left = \"#{fix((100-s)/2)}%\"),  (-> i.right = 0)   ])[x]()\n    s = fix(s) + \"%\"\n    i.width   = s\n    i.height  = s\n    (for k,v of i\n      v? then \"#{k}:#{v}\" else continue\n    ).join \";\"\n\n  ";
       return x;
@@ -337,15 +338,17 @@
       return this.preQuote(this.lib.DynmodPrinter.limitLines(1000).print(x));
     }),
     recalculateTextareaSize: (function(x) {
-      x.coffee = "@>\n      { setTimeout } = @\n      setTimeout (=>\n        editor = @view.coffeeArea.transformed\n        editor.resize()\n        editor.renderer.scrollCursorIntoView()\n      ), 0\n    \n  ";
+      x.coffee = "@>\n      { setTimeout } = @\n      setTimeout (=>\n        editor = @view.coffeeArea.transformed\n        x = editor.container.parentNode\n        x.style.height = x.parentNode.getClientRects()[0].height + \"px\"\n        editor.resize()\n        editor.renderer.scrollCursorIntoView()\n      ), 0\n    \n  ";
       return x;
     })(function() {
       var setTimeout;
       setTimeout = this.setTimeout;
       return setTimeout(((function(_this) {
         return function() {
-          var editor;
+          var editor, x;
           editor = _this.view.coffeeArea.transformed;
+          x = editor.container.parentNode;
+          x.style.height = x.parentNode.getClientRects()[0].height + "px";
           editor.resize();
           return editor.renderer.scrollCursorIntoView();
         };
