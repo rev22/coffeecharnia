@@ -35,6 +35,8 @@
     'text-align': 'initial'
     'font-size': '12px'
   
+  sizePercentage: 70
+
   getInlineStyle: @>
     s = @sizePercentage ? 38
     fix = (x)-> x.toFixed(2)
