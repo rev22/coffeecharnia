@@ -976,7 +976,7 @@ window.coffeecharnia =
     (window.embeddedScriptsRequested ?= []).push src
     if (code = window.embeddedScripts?[src])?
       setTimeout <. window
-      ((x)-> setTimeout x, 3000) ()->
+      ((x)-> setTimeout x, 0) ()->
         window.eval code
         callback() if callback
       return
@@ -1210,7 +1210,7 @@ window.coffeecharnia =
             (window.embeddedScriptsRequested ?= []).push src
             if (code = window.embeddedScripts?[src])?
               setTimeout <. window
-              ((x)-> setTimeout x, 3000) ()->
+              ((x)-> setTimeout x, 0) ()->
                 window.eval code
                 callback() if callback
               return
