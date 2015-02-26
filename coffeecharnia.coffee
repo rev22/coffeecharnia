@@ -1299,4 +1299,31 @@ window.coffeecharnia =
                 return
           return
 
+        chromeAndroidPasteFix = (event)->
+          setTimeout <. window
+          x = document.activeElement
+          
+          e = null
+          while x?
+            break if (e = x.previousSibling?.transformed)?.renderer
+            x = x.parentElement
+          if e? and event.clipboardData.getData("Text") is ""
+              document.body.appendChild(area = document.createElement("textarea"))
+              area.setAttribute "style", "opacity:0;position:absolute"
+              area.focus()
+              ((x)-> setTimeout x, 1000) (x)->
+                  document.body.removeChild area
+                  e.focus()
+              area.addEventListener "paste", (event)->
+                  ((x)-> setTimeout x, 0) ()->
+                      v = area.value
+                      document.body.removeChild area
+                      # alert v
+                      e.focus()
+                      e.insert(v)
+
+          true
+        
+        window.addEventListener 'paste', chromeAndroidPasteFix, true if (ua = window.navigator?.userAgent) and /mobile/i.test(ua) and /webkit\/[0-5][0-9][0-9]\./i.test(ua)
+        
       cb?(app)
