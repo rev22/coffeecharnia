@@ -1,4 +1,4 @@
-TARGETS=coffee-script.js coffeecharnia.js embeddedScripts.js
+TARGETS=coffeecharnia.js bookmarklet-ctrl-m.js
 
 all: $(TARGETS)
 
@@ -8,11 +8,9 @@ clean:
 %.js: %.coffee
 	refcoffee -bc $<
 
-coffee-script.js: ../../reflective-coffeescript/extras/coffee-script.js
-	cp -av $< $@
+# coffee-script.js: ../../reflective-coffeescript/extras/coffee-script.js
+# 	cp -av $< $@
 
-coffeecharnia.coffee: ../coffeecharnia.coffee
-	( cat $<; echo; echo 'window.coffeecharnia.spawn()' ) >$@
+coffeecharnia.js: ../coffeecharnia.js ../lib/embeddedScripts.js
+	( cat ../lib/embeddedScripts.js; echo; cat ../coffeecharnia.js; echo; echo 'window.coffeecharnia.spawn()' ) >$@
 
-embeddedScripts.js: ../lib/embeddedScripts.js
-	cp -uav $< $@
