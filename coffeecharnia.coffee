@@ -1377,8 +1377,9 @@
                     aceCommand (event.shiftKey then "selectpagedown" else "gotopagedown")
                 else
                     alert <. window
-                    alert "Unexpected fn key combo: #{event.keyCode}"
-                    fnKeyDown = false
+                    # alert "Unexpected fn key combo: #{event.keyCode}"
+                    # fnKeyDown = false
+                    return
                 # event.stopPropagation()
                 event.preventDefault()
           keyupHandler = (event)->
