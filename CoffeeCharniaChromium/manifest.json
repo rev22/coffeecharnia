@@ -9,6 +9,6 @@
 		}
 	],
 	"manifest_version" : 2,
-	"web_accessible_resources": [ ],
+	"web_accessible_resources": [ "coffeecharnia.js" ],
 	"icons": { "128": "coffeecharnia.png" }
 }
