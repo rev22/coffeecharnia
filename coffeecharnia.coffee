@@ -34,6 +34,7 @@
     color: '#ddd'
     'text-align': 'initial'
     'font-size': '16px'
+    'z-index': 100000
   
   sizePercentage: 70
 
@@ -1097,6 +1098,7 @@
                 .#{containerClass} button, .#{containerClass} .button, .#{containerClass} input, .#{containerClass} select:not(:focus):not(:hover) { color:white; background:black; }
                 /* select option:not(:checked) { color:red !important; background:black !important; } */
                 /* option:active, option[selected], option:checked, option:hover, option:focus { background:#248 !important; } */
+                
                 .#{containerClass} button, .#{containerClass} .button { min-width:5%; font-size:220%; border: 2px outset grey; }
                 .#{containerClass} button:active, .#{containerClass} .button.button-on { border: 2px inset grey; background:#248; }
                 .#{containerClass} .button input[type="checkbox"] { display:none; }
