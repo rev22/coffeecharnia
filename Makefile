@@ -56,4 +56,4 @@ SwipeBoard.html: SwipeBoard.html.coffee swipeboard.js coffee-script.js coffeecha
 
 coffeecharnia_embedjs.js: embeddedScripts.js coffeecharnia.js
 	cat $^ >$@
- 
+

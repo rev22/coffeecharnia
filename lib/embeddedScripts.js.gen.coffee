@@ -1,5 +1,5 @@
 scripts = [
-  [ 'coffee-script.js', 'CoffeeCharniaChromium/coffee-script.js' ]
+  [ 'coffee-script.js', 'coffee-script.js' ]
   [ 'https://github.com/ajaxorg/ace-builds/raw/master/src-min-noconflict/ace.js', 'lib/ace.js' ]
   [ 'ACE/ext-textarea.js', 'lib/ext-textarea.js' ]
   [ 'ACE/mode-javascript.js', 'lib/mode-javascript.js' ]
