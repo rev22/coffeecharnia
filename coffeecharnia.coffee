@@ -60,6 +60,10 @@
   setStyle: (k,v)@> @inlineStyle[k] = v; @updateInlineStyle()
   setAlpha: (x)@> @setStyle 'opacity', x
 
+  setShowGutter: (x)@> @view.coffeeArea.transformed?.renderer.setShowGutter x
+  showGutter: @> @setShowGutter true
+  hideGutter: @> @setShowGutter false
+
   isConverting: false
     
   target: null # ? @
@@ -279,7 +283,7 @@
         }
         
         .ace-merblue .ace_marker-layer .ace_selection {
-           background: #444;
+           background: #034;
         }
         
         .ace-merblue.ace_multiselect .ace_selection.ace_start {
@@ -301,7 +305,12 @@
         }
         
         .ace-merblue .ace_gutter-active-line {
-          background-color: #345;
+          background-color: #200;
+        }
+
+        .ace-merblue .ace_gutter {
+          background-color: #100;
+          color: #833;
         }
         
         .ace-merblue .ace_marker-layer .ace_selected-word {
@@ -318,7 +327,7 @@
         .ace-merblue .ace_meta.ace_tag,
         .ace-merblue .ace_storage,
         .ace-merblue .ace_support.ace_function {
-          color: #0ff;
+          color: #04f;
         }
         
         .ace-merblue .ace_constant,
@@ -372,7 +381,7 @@
         
         .ace-merblue .ace_comment {
           font-style: italic;
-          color: #e93;
+          color: #1e9;
         }
         
         .ace-merblue .ace_entity.ace_other.ace_attribute-name {
@@ -385,6 +394,19 @@
         
         .ace-merblue .ace_indent-guide {
           background: #101;
+        }
+
+        .ace-merblue .ace_fold-widget {
+          vertical-align: top;
+          background-image: none;
+          border: none;
+        }
+        .ace-merblue .ace_fold-widget::after {
+          content: "▽";
+          color: "#510";
+        }
+        .ace-merblue .ace_closed.ace_fold-widget::after {
+          content: "▶";
         }
 
       e
@@ -515,7 +537,7 @@
           orig = Text.prototype.$renderToken
         
           patched = do (
-            rgx = new RegExp "[a-z][0-9]*[A-Z]", "g"
+            rgx = new RegExp "([a-z][0-9]*[A-Z]|[@$#][0-9A-Za-z])", "g"
           ) -> (builder, col, token, value) ->
             if match = rgx.exec value
               type = token.type
