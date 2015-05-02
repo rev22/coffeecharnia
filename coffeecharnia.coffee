@@ -167,10 +167,11 @@
       if @config.codeLogUrl?
         @codelogger.charnia = @
         @codelogger.slowSaving = =>
+          return if @view.slowSavingMessage?
           @view.coffeecharniaConsole.appendChild do=>
             slowSavingMessage = @lib.document.createElement "div"
             slowSavingMessage.setAttribute "style", "position:absolute;top:0;right:0;font-size:200%;background:red;color:black"
-            slowSavingMessage.innerHTML = "Slow saving..."
+            slowSavingMessage.innerHTML = "Saving..."
             @view .< slowSavingMessage
             slowSavingMessage
         @codelogger.slowSavingDone = =>
