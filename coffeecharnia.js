@@ -292,7 +292,7 @@
       })
     },
     runCode: (function(x) {
-      x.coffee = "(x)@>\n      if @config.codeLogUrl?\n        @codelogger.charnia = @\n        @codelogger.slowSaving = =>\n          @view.coffeecharniaConsole.appendChild do=>\n            slowSavingMessage = @lib.document.createElement \"div\"\n            slowSavingMessage.setAttribute \"style\", \"position:absolute;top:0;right:0;font-size:200%;background:red;color:black\"\n            slowSavingMessage.innerHTML = \"Slow saving...\"\n            @view .< slowSavingMessage\n            slowSavingMessage\n        @codelogger.slowSavingDone = =>\n          @view .> slowSavingMessage then\n            @view.coffeecharniaConsole.removeChild slowSavingMessage\n            delete @view.slowSavingMessage\n        @codelogger.log x\n      { target } = @\n      if target is @global\n        js = @libs.CoffeeScript.compile(@processSource(x), bare:true)\n        @eval js\n      else\n        js = @libs.CoffeeScript.compile(@processSourceIntoFunction(@processSource(x)), bare:true)\n        @eval(\"#{js}\").call(target ? @)\n                 \n  ";
+      x.coffee = "(x)@>\n      if @config.codeLogUrl?\n        @codelogger.charnia = @\n        @codelogger.slowSaving = =>\n          return if @view.slowSavingMessage?\n          @view.coffeecharniaConsole.appendChild do=>\n            slowSavingMessage = @lib.document.createElement \"div\"\n            slowSavingMessage.setAttribute \"style\", \"position:absolute;top:0;right:0;font-size:200%;background:red;color:black\"\n            slowSavingMessage.innerHTML = \"Saving...\"\n            @view .< slowSavingMessage\n            slowSavingMessage\n        @codelogger.slowSavingDone = =>\n          @view .> slowSavingMessage then\n            @view.coffeecharniaConsole.removeChild slowSavingMessage\n            delete @view.slowSavingMessage\n        @codelogger.log x\n      { target } = @\n      if target is @global\n        js = @libs.CoffeeScript.compile(@processSource(x), bare:true)\n        @eval js\n      else\n        js = @libs.CoffeeScript.compile(@processSourceIntoFunction(@processSource(x)), bare:true)\n        @eval(\"#{js}\").call(target ? @)\n                 \n  ";
       return x;
     })(function(x) {
       var js, target;
@@ -300,11 +300,14 @@
         this.codelogger.charnia = this;
         this.codelogger.slowSaving = (function(_this) {
           return function() {
+            if (_this.view.slowSavingMessage != null) {
+              return;
+            }
             return _this.view.coffeecharniaConsole.appendChild((function() {
               var slowSavingMessage;
               slowSavingMessage = _this.lib.document.createElement("div");
               slowSavingMessage.setAttribute("style", "position:absolute;top:0;right:0;font-size:200%;background:red;color:black");
-              slowSavingMessage.innerHTML = "Slow saving...";
+              slowSavingMessage.innerHTML = "Saving...";
               _this.view.slowSavingMessage = slowSavingMessage;
               return slowSavingMessage;
             })());
